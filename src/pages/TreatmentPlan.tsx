@@ -25,7 +25,7 @@ export const TreatmentPlanPage: React.FC = () => {
         citation: '"Đối với PJI do MSSA, Cefazolin hoặc Nafcillin là tiêu chuẩn vàng. Rifampin được thêm vào để tác động lên màng sinh học."'
       }));
     } else {
-       setTreatment(prev => ({
+      setTreatment(prev => ({
         ...prev,
         ivDrug: 'Vancomycin + Cefepime',
         ivDosage: 'Phác đồ phổ rộng',
@@ -45,7 +45,7 @@ export const TreatmentPlanPage: React.FC = () => {
 
       <div className="flex-1 overflow-y-auto p-8 bg-slate-50">
         <div className="max-w-6xl mx-auto space-y-6">
-          
+
           {/* Inputs */}
           <section className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <div className="flex items-center gap-2 mb-4">
@@ -55,9 +55,9 @@ export const TreatmentPlanPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-slate-700">Tác nhân gây bệnh được xác định</label>
-                <select 
-                  value={treatment.pathogen} 
-                  onChange={(e) => setTreatment(p => ({...p, pathogen: e.target.value}))}
+                <select
+                  value={treatment.pathogen}
+                  onChange={(e) => setTreatment(p => ({ ...p, pathogen: e.target.value }))}
                   className="w-full rounded-lg border-slate-200 bg-slate-50 h-12 px-4 border"
                 >
                   <option value="mrsa">Tụ cầu vàng (MRSA)</option>
@@ -67,9 +67,9 @@ export const TreatmentPlanPage: React.FC = () => {
               </div>
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-slate-700">Hồ sơ kháng thuốc</label>
-                 <select 
-                  value={treatment.resistance} 
-                  onChange={(e) => setTreatment(p => ({...p, resistance: e.target.value}))}
+                <select
+                  value={treatment.resistance}
+                  onChange={(e) => setTreatment(p => ({ ...p, resistance: e.target.value }))}
                   className="w-full rounded-lg border-slate-200 bg-slate-50 h-12 px-4 border"
                 >
                   <option value="vancomycin">Kháng trung gian Vancomycin (VISA)</option>
@@ -93,7 +93,7 @@ export const TreatmentPlanPage: React.FC = () => {
                 </div>
                 <div className="p-6 relative">
                   <div className="absolute left-[39px] top-6 bottom-6 w-0.5 bg-slate-200 z-0"></div>
-                  
+
                   {/* Phase 1 */}
                   <div className="relative z-10 flex gap-6 mb-8">
                     <div className="flex flex-col items-center">
@@ -102,8 +102,8 @@ export const TreatmentPlanPage: React.FC = () => {
                     </div>
                     <div className="flex-1 bg-blue-50 border-l-4 border-primary rounded-r-lg p-5">
                       <div className="flex items-center gap-2 mb-2">
-                         <span className="bg-primary/10 text-primary text-xs font-bold px-2 py-1 rounded uppercase">Điều trị tiêm tĩnh mạch</span>
-                         <h4 className="font-bold text-slate-900 text-lg">{treatment.ivDrug}</h4>
+                        <span className="bg-primary/10 text-primary text-xs font-bold px-2 py-1 rounded uppercase">Điều trị tiêm tĩnh mạch</span>
+                        <h4 className="font-bold text-slate-900 text-lg">{treatment.ivDrug}</h4>
                       </div>
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
@@ -125,16 +125,16 @@ export const TreatmentPlanPage: React.FC = () => {
                       <div className="mt-2 text-xs font-semibold text-slate-500 uppercase">Tuần 3-6</div>
                     </div>
                     <div className="flex-1 bg-green-50 border-l-4 border-green-500 rounded-r-lg p-5">
-                       <div className="flex items-center gap-2 mb-2">
-                         <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded uppercase">Điều trị uống duy trì</span>
-                         <h4 className="font-bold text-slate-900 text-lg">{treatment.oralDrug}</h4>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded uppercase">Điều trị uống duy trì</span>
+                        <h4 className="font-bold text-slate-900 text-lg">{treatment.oralDrug}</h4>
                       </div>
-                       <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <p className="text-slate-500 text-xs uppercase font-semibold">Liều lượng</p>
                           <p className="font-medium text-slate-800">{treatment.oralDosage}</p>
                         </div>
-                         <div>
+                        <div>
                           <p className="text-slate-500 text-xs uppercase font-semibold">Thời gian</p>
                           <p className="font-medium text-slate-800">{treatment.oralDuration}</p>
                         </div>

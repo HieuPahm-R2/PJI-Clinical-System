@@ -32,8 +32,8 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               <span className="material-symbols-outlined text-[24px]">orthopedics</span>
             </div>
             <div>
-              <h1 className="text-slate-900 text-lg font-bold leading-tight">OrthoSurg PJI</h1>
-              <p className="text-slate-500 text-xs font-medium">Bộ chẩn đoán v2.4</p>
+              <h1 className="text-slate-900 text-lg font-bold leading-tight">108 MC Hospital</h1>
+              <p className="text-slate-500 text-xs font-medium">Bộ chẩn đoán PJI</p>
             </div>
           </div>
 

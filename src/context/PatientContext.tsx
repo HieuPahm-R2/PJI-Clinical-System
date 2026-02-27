@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { PatientDemographics, ClinicalAssessment, LabResult, TreatmentPlan } from '../types';
+import { PatientDemographics, ClinicalAssessment, LabResult, TreatmentPlan } from '../@types/types';
 
 interface PatientContextType {
   demographics: PatientDemographics;
