@@ -1,9 +1,12 @@
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { usePatient } from '../context/PatientContext';
+import { usePatient } from '../../../context/PatientContext';
 
-export const ClinicalAssessmentPage: React.FC = () => {
-  const navigate = useNavigate();
+interface ClinicalAssessmentProps {
+  onNext?: () => void;
+  onPrev?: () => void;
+}
+
+export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({ onNext, onPrev }) => {
   const { demographics, setDemographics, clinical, setClinical } = usePatient();
 
   // Logic: ICM 2018 Scoring
@@ -154,9 +157,10 @@ export const ClinicalAssessmentPage: React.FC = () => {
             <span className="material-symbols-outlined text-sm">accessibility_new</span> Vị trí: {demographics.implantType} ({demographics.implantNature})
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/labs')} className="flex items-center justify-center gap-2 px-5 h-10 bg-primary hover:bg-primary-dark text-white font-bold text-sm rounded-lg shadow-md transition-all">
-            Tạo báo cáo
+        <div className="flex items-center gap-3 z-10">
+          <button onClick={onPrev} className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors bg-white border border-slate-200 rounded-lg">Quay lại</button>
+          <button onClick={onNext} className="flex items-center justify-center gap-2 px-5 h-10 bg-primary hover:bg-primary-dark text-white font-bold text-sm rounded-lg shadow-md transition-all">
+            Đến bảng kháng sinh đồ
           </button>
         </div>
       </header>

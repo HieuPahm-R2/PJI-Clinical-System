@@ -1,17 +1,43 @@
-import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, Outlet, useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { Dropdown, MenuProps, Avatar } from 'antd';
+import { UserOutlined, SettingOutlined, LogoutOutlined } from '@ant-design/icons';
 import { usePatient } from '../context/PatientContext';
 
-export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const LayoutClient = () => {
   const { demographics } = usePatient();
   const location = useLocation();
+  const navigate = useNavigate();
+  // const dispatch = useDispatch();
+  // const user = useSelector((state: any) => state.account?.user);
+
+  const handleLogout = () => {
+    // You can dispatch existing logout action here if you want
+    navigate('/login');
+  };
+
+  const userMenu: MenuProps['items'] = [
+    {
+      key: 'settings',
+      icon: <SettingOutlined />,
+      label: 'Cài đặt tài khoản',
+    },
+    {
+      type: 'divider',
+    },
+    {
+      key: 'logout',
+      icon: <LogoutOutlined />,
+      label: 'Đăng xuất',
+      danger: true,
+      onClick: handleLogout,
+    },
+  ];
 
   const menuItems = [
-    { path: '/', label: 'Thông tin bệnh nhân', icon: 'person', step: 1 },
-    { path: '/history', label: 'Tiền sử bệnh', icon: 'history', step: 2 },
-    { path: '/clinical', label: 'Lâm sàng và cận lâm sàng', icon: 'clinical_notes', step: 3 },
-    { path: '/labs', label: 'Kết quả xét nghiệm', icon: 'biotech', step: 4 },
-    { path: '/treatment', label: 'Phác đồ điều trị', icon: 'medical_services', step: 5 },
+    { path: '/', label: 'Chẩn đoán và đề xuất điều trị', icon: 'person', step: 1 },
+    { path: '/table-patients', label: 'Quản lý bệnh án', icon: 'history', step: 2 },
+    { path: '/chart-testing', label: 'Biểu đồ và thống kê', icon: 'clinical_notes', step: 3 },
   ];
 
   // Helper to check if a route is active (or if it's the root path)
@@ -29,7 +55,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           {/* Header */}
           <div className="flex items-center gap-3 px-6 py-6">
             <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 text-primary">
-              <span className="material-symbols-outlined text-[24px]">orthopedics</span>
+              <span className="material-symbols-outlined text-[12px]">BK</span>
             </div>
             <div>
               <h1 className="text-slate-900 text-lg font-bold leading-tight">108 MC Hospital</h1>
@@ -77,18 +103,28 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           </nav>
         </div>
 
-        {/* Footer Actions */}
+        {/* User Profile Footer */}
         <div className="p-4 border-t border-slate-200">
-          <button className="flex w-full items-center justify-center gap-2 rounded-lg bg-white border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors">
-            <span className="material-symbols-outlined text-[18px]">save</span>
-            Lưu nháp
-          </button>
+          <Dropdown menu={{ items: userMenu }} trigger={['click']} placement="topLeft">
+            <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors border border-transparent hover:border-slate-200">
+              <Avatar size="large" icon={<UserOutlined />} className="bg-primary/10 text-primary flex-shrink-0 border border-primary/20 aspect-square" />
+              <div className="flex flex-col flex-1 min-w-0">
+                <span className="text-sm font-bold text-slate-900 truncate">
+                  {'Phạm Trung Hiếu'}
+                </span>
+                <span className="text-xs font-medium text-slate-500 truncate">
+                  {'Bác sĩ chuyên khoa'}
+                </span>
+              </div>
+              <span className="material-symbols-outlined text-slate-400 text-[20px]">expand_more</span>
+            </div>
+          </Dropdown>
         </div>
       </aside>
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
-        {children}
+        <Outlet />
       </main>
     </div>
   );

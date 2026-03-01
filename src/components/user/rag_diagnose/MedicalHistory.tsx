@@ -1,9 +1,12 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { usePatient } from '../context/PatientContext';
+import { usePatient } from '../../../context/PatientContext';
 
-export const MedicalHistoryPage: React.FC = () => {
-    const navigate = useNavigate();
+interface MedicalHistoryProps {
+    onNext?: () => void;
+    onPrev?: () => void;
+}
+
+export const MedicalHistoryPage: React.FC<MedicalHistoryProps> = ({ onNext, onPrev }) => {
     const { demographics, setDemographics } = usePatient();
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -263,11 +266,11 @@ export const MedicalHistoryPage: React.FC = () => {
 
             {/* Footer */}
             <div className="absolute bottom-0 w-full bg-white border-t border-slate-200 p-4 px-8 flex items-center justify-between z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-                <button onClick={() => navigate('/')} className="px-6 py-3 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-2">
+                <button onClick={onPrev} className="px-6 py-3 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-2">
                     <span className="material-symbols-outlined text-[18px]">arrow_back</span>
                     Quay lại
                 </button>
-                <button onClick={() => navigate('/clinical')} className="flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-white hover:bg-blue-600 shadow-lg shadow-blue-500/20 transition-all active:scale-95">
+                <button onClick={onNext} className="flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-white hover:bg-blue-600 shadow-lg shadow-blue-500/20 transition-all active:scale-95">
                     Tiếp tục
                     <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                 </button>

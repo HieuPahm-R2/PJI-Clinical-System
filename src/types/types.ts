@@ -111,3 +111,17 @@ export interface TreatmentPlan {
   citation: string;
   confidence: number;
 }
+export type RiskLevel = "Thấp" | "Trung bình" | "Cao";
+export type SurgeryStatus = "Đề xuất" | "Bắt buộc" | "Tùy chọn";
+export interface SurgeryStep {
+  id: number;
+  step: number;
+  name: string;
+  description: string;
+  duration: string;
+  timing: string;
+  surgeon: string;
+  notes: string;
+  risk: RiskLevel;
+  status: SurgeryStatus;
+}

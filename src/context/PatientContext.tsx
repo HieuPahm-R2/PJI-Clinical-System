@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { PatientDemographics, ClinicalAssessment, LabResult, TreatmentPlan } from '../types/types';
 
 interface PatientContextType {
@@ -132,10 +132,38 @@ const defaultTreatment: TreatmentPlan = {
 const PatientContext = createContext<PatientContextType | undefined>(undefined);
 
 export const PatientProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [demographics, setDemographics] = useState<PatientDemographics>(defaultDemographics);
-  const [clinical, setClinical] = useState<ClinicalAssessment>(defaultClinical);
-  const [labData, setLabData] = useState<LabResult[]>(defaultLabs);
-  const [treatment, setTreatment] = useState<TreatmentPlan>(defaultTreatment);
+  const [demographics, setDemographics] = useState<PatientDemographics>(() => {
+    const saved = localStorage.getItem('pji_demographics');
+    return saved ? JSON.parse(saved) : defaultDemographics;
+  });
+  const [clinical, setClinical] = useState<ClinicalAssessment>(() => {
+    const saved = localStorage.getItem('pji_clinical');
+    return saved ? JSON.parse(saved) : defaultClinical;
+  });
+  const [labData, setLabData] = useState<LabResult[]>(() => {
+    const saved = localStorage.getItem('pji_labData');
+    return saved ? JSON.parse(saved) : defaultLabs;
+  });
+  const [treatment, setTreatment] = useState<TreatmentPlan>(() => {
+    const saved = localStorage.getItem('pji_treatment');
+    return saved ? JSON.parse(saved) : defaultTreatment;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('pji_demographics', JSON.stringify(demographics));
+  }, [demographics]);
+
+  useEffect(() => {
+    localStorage.setItem('pji_clinical', JSON.stringify(clinical));
+  }, [clinical]);
+
+  useEffect(() => {
+    localStorage.setItem('pji_labData', JSON.stringify(labData));
+  }, [labData]);
+
+  useEffect(() => {
+    localStorage.setItem('pji_treatment', JSON.stringify(treatment));
+  }, [treatment]);
 
   const updateLabData = (day: string, field: keyof LabResult, value: number) => {
     setLabData(prev => prev.map(item => item.day === day ? { ...item, [field]: value } : item));

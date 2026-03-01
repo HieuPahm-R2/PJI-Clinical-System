@@ -1,9 +1,12 @@
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { usePatient } from '../context/PatientContext';
+import { usePatient } from '../../../context/PatientContext';
 
-export const PatientIntake: React.FC = () => {
-  const navigate = useNavigate();
+interface PatientIntakeProps {
+  onNext?: () => void;
+  onCancel?: () => void;
+}
+
+export const PatientIntake: React.FC<PatientIntakeProps> = ({ onNext, onCancel }) => {
   const { demographics, setDemographics } = usePatient();
 
   // Logic: Calculate BMI
@@ -114,8 +117,8 @@ export const PatientIntake: React.FC = () => {
 
       {/* Footer */}
       <div className="absolute bottom-0 w-full bg-white border-t border-slate-200 p-4 px-8 flex items-center justify-between z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-        <button className="px-6 py-3 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Hủy bỏ</button>
-        <button onClick={() => navigate('/history')} className="flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-white hover:bg-blue-600 shadow-lg shadow-blue-500/20 transition-all active:scale-95">
+        <button onClick={onCancel} className="px-6 py-3 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Hủy bỏ</button>
+        <button onClick={onNext} className="flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-white hover:bg-blue-600 shadow-lg shadow-blue-500/20 transition-all active:scale-95">
           Tiếp tục
           <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
         </button>

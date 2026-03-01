@@ -14,7 +14,7 @@ export default defineConfig(({ command, mode }) => {
       // visualizer() as PluginOption
     ],
     //Thay đổi base thành tên repository của bạn để GitHub Pages load đúng đường dẫn file CSS/JS.
-    base: '/pji-clinical-decision-support/',
+    base: '/',
     build: {
       outDir: 'dist',
       assetsDir: 'assets',
