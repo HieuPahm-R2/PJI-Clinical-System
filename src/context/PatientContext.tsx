@@ -78,12 +78,21 @@ const defaultClinical: ClinicalAssessment = {
   hematologyTests: [
     { id: 'ht_1', name: 'Bạch cầu', result: '', normalRange: '', unit: 'Tế bào/Vi trường' },
     { id: 'ht_2', name: '%NEUT', result: '', normalRange: '40 - 74', unit: '%' },
-    { id: 'ht_3', name: 'Máu lắng', result: '', normalRange: '< 10', unit: 'mm' },
+    { id: 'ht_3', name: '%LYMPH', result: '', normalRange: '19 - 48', unit: '%' },
+    { id: 'ht_4', name: '%MONO', result: '', normalRange: '3.4 - 9', unit: '%' },
+    { id: 'ht_5', name: '%EOS', result: '', normalRange: '0 - 7', unit: '%' },
+    { id: 'ht_6', name: '%BASO', result: '', normalRange: '0 - 1.5', unit: '%' },
+    { id: 'ht_7', name: 'Máu lắng', result: '', normalRange: '< 10', unit: 'mm' },
+    { id: 'ht_9', name: 'RBC', result: '', normalRange: '3.8 - 5.5', unit: 'g/L' },
+    { id: 'ht_10', name: 'Hgb', result: '', normalRange: '120 - 150', unit: 'g/L' },
+    { id: 'ht_11', name: 'Hct', result: '', normalRange: '0.335 - 0.45', unit: 'L/L' },
+    { id: 'ht_12', name: 'MCV', result: '', normalRange: '75 - 96', unit: 'fL' },
+    { id: 'ht_13', name: 'MCH', result: '', normalRange: '24 - 33', unit: 'pg' },
+    { id: 'ht_14', name: 'MCHC', result: '', normalRange: '316 - 372', unit: 'g/L' },
+    { id: 'ht_15', name: 'RDW-CV', result: '', normalRange: '11.5 - 14.5', unit: '%' },
+    { id: 'ht_16', name: 'IG%', result: '', normalRange: '6 - 11', unit: 'fL' },
   ],
   biochemistryTests: [
-    { id: 'bc_1', name: 'Định lượng CRP', result: '', normalRange: '0 - 5', unit: 'mg/l' },
-    { id: 'bc_2', name: 'D-Dimer', result: '', normalRange: '< 0.5', unit: 'μg/mL' },
-    { id: 'bc_3', name: 'Alpha Defensin', result: '', normalRange: '< 5.2', unit: 'μg/mL' },
     { id: 'bc_4', name: 'Định lượng Glucose', result: '', normalRange: '4.1 - 5.6', unit: 'mmol/l' },
     { id: 'bc_5', name: 'Định lượng Urê máu', result: '', normalRange: '2.8 - 7.2', unit: 'mmol/l' },
     { id: 'bc_6', name: 'Định lượng Creatinin', result: '', normalRange: '59 - 104', unit: 'µmol/l' },
@@ -100,8 +109,8 @@ const defaultClinical: ClinicalAssessment = {
     { id: 'fa_1', name: 'Cấy khuẩn', result: '', normalRange: '', unit: 'CFU/mL' },
     { id: 'fa_2', name: 'Nhuộm Gram', result: '', normalRange: '', unit: '' },
     { id: 'fa_3', name: 'Bạch cầu (Dịch)', result: '', normalRange: '', unit: 'Tế bào/Vi trường' },
-    { id: 'fa_4', name: '%NEUT (Dịch)', result: '', normalRange: '', unit: '%' },
     { id: 'fa_5', name: 'Định lượng CRP (Dịch)', result: '', normalRange: '', unit: 'mg/l' },
+    { id: 'fa_6', name: '%PMN (Dịch)', result: '', normalRange: '', unit: '%' },
   ],
   cultureSamples: [
     {
@@ -120,9 +129,9 @@ const defaultClinical: ClinicalAssessment = {
 
 const defaultLabs: LabResult[] = [
   { day: 'Trước mổ', wbc: 6.5, neu: 55, esr: 12, crp: 4.0 },
-  { day: 'Ngày 1', wbc: 12.1, neu: 82, esr: 45, crp: 145 },
-  { day: 'Ngày 3', wbc: 9.8, neu: 65, esr: 38, crp: 85 },
-  { day: 'Ngày 7', wbc: null, neu: null, esr: null, crp: null },
+  { day: '7/3/2026', wbc: 12.1, neu: 82, esr: 45, crp: 145 },
+  { day: '5/4/2026', wbc: 9.8, neu: 65, esr: 38, crp: 85 },
+  { day: '6/5/2026', wbc: null, neu: null, esr: null, crp: null },
 ];
 
 const defaultTreatment: TreatmentPlan = {
