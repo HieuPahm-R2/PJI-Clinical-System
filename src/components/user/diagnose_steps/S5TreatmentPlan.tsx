@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Button, Input, Drawer, Spin } from 'antd';
+import { Button, Input, Drawer, Spin, Modal, Result } from 'antd';
 import { SendOutlined, InfoCircleOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { usePatient } from '../../../context/PatientContext';
 import SurgerySection from '../rag_diagnose/rag_surgery/SurgerySection';
@@ -16,7 +16,50 @@ interface Message {
     timestamp: Date;
 }
 
+type PhaseColor = 'blue' | 'emerald';
+
+interface TreatmentPhase {
+    id: string;
+    phaseNumber: number;
+    weekLabel: string;
+    routeLabel: string;
+    drugName: string;
+    dosage: string;
+    duration: string;
+    color: PhaseColor;
+}
+
+type EditablePhaseField = 'weekLabel' | 'routeLabel' | 'drugName' | 'dosage' | 'duration';
+
 export const Step5TreatmentPlan: React.FC<Step5Props> = ({ onPrev }) => {
+    const { treatment, setTreatment } = usePatient();
+
+    const [phases, setPhases] = useState<TreatmentPhase[]>(() => [
+        {
+            id: 'phase-1',
+            phaseNumber: 1,
+            weekLabel: 'Tuần 1-2',
+            routeLabel: 'Điều trị tiêm tĩnh mạch',
+            drugName: treatment.ivDrug,
+            dosage: treatment.ivDosage,
+            duration: treatment.ivDuration,
+            color: 'blue',
+        },
+        {
+            id: 'phase-2',
+            phaseNumber: 2,
+            weekLabel: 'Tuần 3-6',
+            routeLabel: 'Điều trị uống duy trì',
+            drugName: treatment.oralDrug,
+            dosage: treatment.oralDosage,
+            duration: treatment.oralDuration,
+            color: 'emerald',
+        },
+    ]);
+
+    const [editingPhaseId, setEditingPhaseId] = useState<string | null>(null);
+    const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [messages, setMessages] = useState<Message[]>([
         {
@@ -29,6 +72,79 @@ export const Step5TreatmentPlan: React.FC<Step5Props> = ({ onPrev }) => {
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    const handlePhaseFieldChange = (id: string, field: EditablePhaseField, value: string) => {
+        setPhases(prev =>
+            prev.map(phase =>
+                phase.id === id
+                    ? {
+                        ...phase,
+                        [field]: value,
+                    }
+                    : phase
+            )
+        );
+    };
+
+    const handleAddPhase = () => {
+        const newId = `phase-${Date.now()}`;
+        setPhases(prev => {
+            const nextIndex = prev.length + 1;
+            const lastColor = prev[prev.length - 1]?.color ?? 'emerald';
+            const nextColor: PhaseColor = lastColor === 'blue' ? 'emerald' : 'blue';
+
+            return [
+                ...prev,
+                {
+                    id: newId,
+                    phaseNumber: nextIndex,
+                    weekLabel: '',
+                    routeLabel: '',
+                    drugName: '',
+                    dosage: '',
+                    duration: '',
+                    color: nextColor,
+                },
+            ];
+        });
+        setEditingPhaseId(newId);
+    };
+
+    const toggleEditPhase = (id: string) => {
+        setEditingPhaseId(prev => (prev === id ? null : id));
+    };
+
+    const handleConfirmTreatment = () => {
+        // Đồng bộ 2 phase đầu tiên về TreatmentPlan trong context (giữ tương thích với cấu trúc hiện tại)
+        setTreatment(prev => {
+            const [ivPhase, oralPhase] = phases;
+            return {
+                ...prev,
+                ivDrug: ivPhase?.drugName || prev.ivDrug,
+                ivDosage: ivPhase?.dosage || prev.ivDosage,
+                ivDuration: ivPhase?.duration || prev.ivDuration,
+                oralDrug: oralPhase?.drugName || prev.oralDrug,
+                oralDosage: oralPhase?.dosage || prev.oralDosage,
+                oralDuration: oralPhase?.duration || prev.oralDuration,
+            };
+        });
+
+        // TODO: gửi `phases` lên backend/AI nếu cần
+        console.log('Confirmed systemic antibiotic phases:', phases);
+
+        // Hiển thị Result modal thành công
+        setIsSuccessModalOpen(true);
+    };
+
+    const backToHomepage = () => {
+        // Xóa tất cả dữ liệu bệnh nhân trong localStorage
+        localStorage.clear();
+
+        // Quay lại step 1 (gọi onPrev 4 lần từ step 5)
+        for (let i = 0; i < 5; i++) {
+            onPrev();
+        }
+    };
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -95,7 +211,12 @@ export const Step5TreatmentPlan: React.FC<Step5Props> = ({ onPrev }) => {
                     </h1>
                 </div>
                 <div className="flex items-center gap-3 z-10">
-                    <Button size="small" type="primary" className="bg-green-700 hover:!bg-green-400 border-none flex items-center gap-1.5">
+                    <Button
+                        size="small"
+                        type="primary"
+                        onClick={handleConfirmTreatment}
+                        className="bg-green-700 hover:!bg-green-400 border-none flex items-center gap-1.5"
+                    >
                         Xác nhận <span className="material-symbols-outlined text-[14px]">save</span>
                     </Button>
                     <button onClick={onPrev} className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition-colors bg-slate-800 border border-slate-600 hover:border-slate-500 rounded-lg">Quay lại</button>
@@ -117,82 +238,192 @@ export const Step5TreatmentPlan: React.FC<Step5Props> = ({ onPrev }) => {
                             <div className="p-4 relative">
                                 <div className="absolute left-[39px] top-6 bottom-6 w-0.5 bg-slate-200 z-0"></div>
 
-                                {/* Phase 1 */}
-                                <div className="relative z-10 flex gap-6 mb-8 group">
-                                    <div className="flex flex-col items-center">
-                                        <div className="w-8 h-8 rounded-full bg-blue-400 text-white flex items-center justify-center font-bold text-sm shadow ring-4 ring-white">1</div>
-                                        <div className="mt-2 font-semibold text-black uppercase">Tuần 1-2</div>
-                                    </div>
-                                    <div className="flex-1 bg-blue-50 border border-blue-100 rounded-xl p-5 relative transition-all hover:shadow-md">
-                                        <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button title="Hỏi AI" className="p-1.5 text-slate-400 hover:text-purple-600 hover:bg-white rounded-md transition-colors flex items-center">
-                                                <span className="material-symbols-outlined text-[18px]">psychology</span>
-                                            </button>
-                                            <button title="Thêm thuốc" className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded-md transition-colors">
-                                                <PlusOutlined className="text-sm" />
-                                            </button>
-                                            <button title="Chỉnh sửa" className="p-1.5 text-slate-400 hover:text-yellow-600 hover:bg-white rounded-md transition-colors">
-                                                <EditOutlined className="text-sm" />
-                                            </button>
-                                            <button title="Xóa" className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-white rounded-md transition-colors">
-                                                <DeleteOutlined className="text-sm" />
-                                            </button>
-                                        </div>
-                                        <div className="flex items-center gap-2 mb-3">
-                                            <span className="bg-blue-600/10 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded uppercase">Điều trị tiêm tĩnh mạch</span>
-                                            <h4 className="font-bold text-slate-900 text-lg">Daptomycin</h4>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-4 text-sm">
-                                            <div>
-                                                <p className="text-slate-500 text-[10px] uppercase font-bold mb-0.5">Liều lượng</p>
-                                                <p className="font-semibold text-slate-800">6-8 mg/kg IV</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-slate-500 text-[10px] uppercase font-bold mb-0.5">Thời gian</p>
-                                                <p className="font-semibold text-slate-800">2-4 tuần</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                {phases.map((phase, index) => {
+                                    const isLast = index === phases.length - 1;
+                                    const isEditing = editingPhaseId === phase.id;
 
-                                {/* Phase 2 */}
-                                <div className="relative z-10 flex gap-6 group">
-                                    <div className="flex flex-col items-center">
-                                        <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow ring-4 ring-white">2</div>
-                                        <div className="mt-2 text-xs font-semibold text-slate-500 uppercase">Tuần 3-6</div>
-                                    </div>
-                                    <div className="flex-1 bg-emerald-50 border border-emerald-100 rounded-xl p-5 relative transition-all hover:shadow-md">
-                                        <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button title="Hỏi AI" className="p-1.5 text-slate-400 hover:text-purple-600 hover:bg-white rounded-md transition-colors flex items-center">
-                                                <span className="material-symbols-outlined text-[18px]">psychology</span>
-                                            </button>
-                                            <button title="Thêm thuốc" className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-white rounded-md transition-colors">
-                                                <PlusOutlined className="text-sm" />
-                                            </button>
-                                            <button title="Chỉnh sửa" className="p-1.5 text-slate-400 hover:text-yellow-600 hover:bg-white rounded-md transition-colors">
-                                                <EditOutlined className="text-sm" />
-                                            </button>
-                                            <button title="Xóa" className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-white rounded-md transition-colors">
-                                                <DeleteOutlined className="text-sm" />
-                                            </button>
-                                        </div>
-                                        <div className="flex items-center gap-2 mb-3">
-                                            <span className="bg-emerald-600/10 text-emerald-600 text-[10px] font-bold px-2 py-0.5 rounded uppercase">Điều trị uống duy trì</span>
-                                            <h4 className="font-bold text-slate-900 text-lg">Rifampin + Levofloxacin</h4>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-4 text-sm">
-                                            <div>
-                                                <p className="text-slate-500 text-[10px] uppercase font-bold mb-0.5">Liều lượng</p>
-                                                <p className="font-semibold text-slate-800">900mg/ngày</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-slate-500 text-[10px] uppercase font-bold mb-0.5">Thời gian</p>
-                                                <p className="font-semibold text-slate-800">12 tuần</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                    const colorClasses =
+                                        phase.color === 'blue'
+                                            ? {
+                                                circle: 'bg-blue-400',
+                                                cardBg: 'bg-blue-50',
+                                                cardBorder: 'border-blue-100',
+                                                tagBg: 'bg-blue-600/10',
+                                                tagText: 'text-blue-600',
+                                            }
+                                            : {
+                                                circle: 'bg-emerald-600',
+                                                cardBg: 'bg-emerald-50',
+                                                cardBorder: 'border-emerald-100',
+                                                tagBg: 'bg-emerald-600/10',
+                                                tagText: 'text-emerald-600',
+                                            };
 
+                                    return (
+                                        <div
+                                            key={phase.id}
+                                            className={`relative z-10 flex gap-6 group ${!isLast ? 'mb-8' : ''}`}
+                                        >
+                                            <div className="flex flex-col items-center">
+                                                <div
+                                                    className={`w-8 h-8 rounded-full ${colorClasses.circle} text-white flex items-center justify-center font-bold text-sm shadow ring-4 ring-white`}
+                                                >
+                                                    {index + 1}
+                                                </div>
+                                                {isEditing ? (
+                                                    <Input
+                                                        size="small"
+                                                        placeholder="Tuần điều trị"
+                                                        value={phase.weekLabel}
+                                                        onChange={e =>
+                                                            handlePhaseFieldChange(
+                                                                phase.id,
+                                                                'weekLabel',
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                        className="mt-2 text-[10px] font-semibold text-center uppercase border-none bg-transparent text-slate-700 px-0"
+                                                    />
+                                                ) : (
+                                                    <div className="mt-2 text-[10px] font-semibold text-center uppercase text-slate-700 px-1">
+                                                        {phase.weekLabel || 'Tuần điều trị'}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div
+                                                className={`flex-1 ${colorClasses.cardBg} border ${colorClasses.cardBorder} rounded-xl p-5 relative transition-all hover:shadow-md`}
+                                            >
+                                                <div className="absolute top-0 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                        title="Hỏi AI"
+                                                        className="p-1.5 text-slate-400 hover:text-purple-600 hover:bg-white rounded-md transition-colors flex items-center"
+                                                    >
+                                                        <span className="material-symbols-outlined text-[18px]">
+                                                            psychology
+                                                        </span>
+                                                    </button>
+
+                                                    <button
+                                                        title={isEditing ? 'Đóng chỉnh sửa' : 'Chỉnh sửa'}
+                                                        onClick={() => toggleEditPhase(phase.id)}
+                                                        className="p-1.5 text-slate-400 hover:text-yellow-600 hover:bg-white rounded-md transition-colors"
+                                                    >
+                                                        <EditOutlined className="text-sm" />
+                                                    </button>
+                                                    <button
+                                                        title="Xóa"
+                                                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-white rounded-md transition-colors"
+                                                    >
+                                                        <DeleteOutlined className="text-sm" />
+                                                    </button>
+                                                </div>
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    {isEditing ? (
+                                                        <Input
+                                                            size="small"
+                                                            placeholder="Loại điều trị"
+                                                            value={phase.routeLabel}
+                                                            onChange={e =>
+                                                                handlePhaseFieldChange(
+                                                                    phase.id,
+                                                                    'routeLabel',
+                                                                    e.target.value
+                                                                )
+                                                            }
+                                                            className={`text-[10px] font-bold px-2 py-0.5 rounded mt-2 uppercase border-none ${colorClasses.tagBg} ${colorClasses.tagText}`}
+                                                        />
+                                                    ) : (
+                                                        <span
+                                                            className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${colorClasses.tagBg} ${colorClasses.tagText}`}
+                                                        >
+                                                            {phase.routeLabel || 'Loại điều trị'}
+                                                        </span>
+                                                    )}
+                                                    {isEditing ? (
+                                                        <Input
+                                                            size="middle"
+                                                            placeholder="Tên thuốc / phác đồ"
+                                                            value={phase.drugName}
+                                                            onChange={e =>
+                                                                handlePhaseFieldChange(
+                                                                    phase.id,
+                                                                    'drugName',
+                                                                    e.target.value
+                                                                )
+                                                            }
+                                                            className="font-bold text-slate-900 text-lg border-none bg-transparent px-0 mt-2"
+                                                        />
+                                                    ) : (
+                                                        <h4 className="font-bold text-slate-900 text-lg">
+                                                            {phase.drugName || 'Tên thuốc / phác đồ'}
+                                                        </h4>
+                                                    )}
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                                    <div>
+                                                        <p className="text-slate-500 text-[10px] uppercase font-bold mb-0.5">
+                                                            Liều lượng
+                                                        </p>
+                                                        {isEditing ? (
+                                                            <Input
+                                                                size="small"
+                                                                placeholder="Nhập liều lượng"
+                                                                value={phase.dosage}
+                                                                onChange={e =>
+                                                                    handlePhaseFieldChange(
+                                                                        phase.id,
+                                                                        'dosage',
+                                                                        e.target.value
+                                                                    )
+                                                                }
+                                                                className="font-semibold text-slate-800"
+                                                            />
+                                                        ) : (
+                                                            <p className="font-semibold text-slate-800">
+                                                                {phase.dosage || '—'}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-slate-500 text-[10px] uppercase font-bold mb-0.5">
+                                                            Thời gian
+                                                        </p>
+                                                        {isEditing ? (
+                                                            <Input
+                                                                size="small"
+                                                                placeholder="Nhập thời gian"
+                                                                value={phase.duration}
+                                                                onChange={e =>
+                                                                    handlePhaseFieldChange(
+                                                                        phase.id,
+                                                                        'duration',
+                                                                        e.target.value
+                                                                    )
+                                                                }
+                                                                className="font-semibold text-slate-800"
+                                                            />
+                                                        ) : (
+                                                            <p className="font-semibold text-slate-800">
+                                                                {phase.duration || '—'}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+
+                                <div className="mt-6">
+                                    <button
+                                        type="button"
+                                        onClick={handleAddPhase}
+                                        className="w-full border-2 border-dashed border-slate-300 hover:border-blue-400 rounded-xl py-3 flex items-center justify-center text-sm font-medium text-slate-500 hover:text-blue-600 bg-slate-50/40 transition-colors"
+                                    >
+                                        <PlusOutlined className="mr-2" />
+                                        Thêm phase điều trị mới
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         {/**Section: Local Antibitics */}
@@ -324,6 +555,28 @@ export const Step5TreatmentPlan: React.FC<Step5Props> = ({ onPrev }) => {
                     </div>
                 </div>
             </Drawer>
+
+            {/* Success Result Modal */}
+            <Modal
+                title={null}
+                footer={null}
+                closable={true}
+                open={isSuccessModalOpen}
+                onCancel={() => backToHomepage()}
+                width={500}
+                centered
+            >
+                <Result
+                    status="success"
+                    title="Xác nhận phác đồ điều trị thành công!"
+                    subTitle="Dữ liệu điều trị của bạn đã được lưu thành công. Hãy tiếp tục bước tiếp theo."
+                    extra={
+                        <Button type="primary" onClick={() => backToHomepage()}>
+                            Đóng
+                        </Button>
+                    }
+                />
+            </Modal>
         </div>
     );
 };

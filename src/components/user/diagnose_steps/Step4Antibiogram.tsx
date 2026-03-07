@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
 
@@ -9,18 +9,12 @@ interface Step4Props {
 
 export const Step4Antibiogram: React.FC<Step4Props> = ({ onNext, onPrev }) => {
     // Mock data for Antibiogram
-    const antibiotics = [
-        { name: 'Oxacillin', mic: '>=4', interpretation: 'R' },
-        { name: 'Cefoxitin Screen', mic: 'Positive', interpretation: 'R' },
-        { name: 'Vancomycin', mic: '<=0.5', interpretation: 'S' },
-        { name: 'Daptomycin', mic: '<=0.5', interpretation: 'S' },
-        { name: 'Linezolid', mic: '1', interpretation: 'S' },
-        { name: 'Clindamycin', mic: '>4', interpretation: 'R' },
-        { name: 'Erythromycin', mic: '>8', interpretation: 'R' },
-        { name: 'Rifampin', mic: '<=0.5', interpretation: 'S' },
-        { name: 'Trimethoprim/Sulfamethoxazole', mic: '<=10', interpretation: 'S' },
-        { name: 'Gentamicin', mic: '<=0.5', interpretation: 'S' }
+    const initialAntibiotics = [
+        { name: '', mic: '', interpretation: '', notes: '' },
+
     ];
+
+    const [antibiotics, setAntibiotics] = useState(initialAntibiotics);
 
     const getInterpretationColor = (val: string) => {
         if (val === 'R') return 'bg-red-100 text-red-700 border-red-200';
@@ -58,26 +52,106 @@ export const Step4Antibiogram: React.FC<Step4Props> = ({ onNext, onPrev }) => {
                                 <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
                                     <tr>
                                         <th className="px-4 py-3 border-r border-slate-200">Tên kháng sinh</th>
-                                        <th className="px-4 py-3 border-r border-slate-200 w-32 text-center">MIC (µg/mL)</th>
-                                        <th className="px-4 py-3 border-r border-slate-200 w-32 text-center">Biện luận</th>
-                                        <th className="px-4 py-3 text-center">Ghi chú</th>
+                                        <th className="px-4 py-3 border-r border-slate-200 w-32 text-center">
+                                            MIC (µg/mL)
+                                        </th>
+                                        <th className="px-4 py-3 border-r border-slate-200 w-32 text-center">
+                                            Biện luận
+                                        </th>
+                                        <th className="px-4 py-3 text-center w-24">Hành động</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-200">
                                     {antibiotics.map((ab, idx) => (
                                         <tr key={idx} className="hover:bg-slate-50/50">
-                                            <td className="px-4 py-2 font-medium text-slate-800 border-r border-slate-200">{ab.name}</td>
-                                            <td className="px-4 py-2 border-r border-slate-200 text-center text-slate-600 font-mono">{ab.mic}</td>
-                                            <td className="px-4 py-2 border-r border-slate-200 text-center">
-                                                <span className={`inline-flex items-center justify-center font-bold text-xs w-8 h-6 rounded border ${getInterpretationColor(ab.interpretation)}`}>
-                                                    {ab.interpretation}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-2 text-slate-500 text-center">
-                                                {ab.name === 'Rifampin' && <span className="text-xs italic text-blue-600">Khuyến cáo phối hợp trị màng sinh học</span>}
-                                            </td>
+                                            {(
+                                                <>
+                                                    <td className="px-4 py-2 border-r border-slate-200">
+                                                        <input
+                                                            className="w-full border border-slate-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                                            placeholder="Tên kháng sinh"
+                                                            value={ab.name}
+                                                            onChange={e =>
+                                                                setAntibiotics(prev =>
+                                                                    prev.map((item, i) =>
+                                                                        i === idx
+                                                                            ? { ...item, name: e.target.value }
+                                                                            : item
+                                                                    )
+                                                                )
+                                                            }
+                                                        />
+                                                    </td>
+                                                    <td className="px-4 py-2 border-r border-slate-200 text-center">
+                                                        <input
+                                                            className="w-full border border-slate-300 rounded px-2 py-1 text-sm text-center font-mono focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                                            placeholder="VD: >=4"
+                                                            value={ab.mic}
+                                                            onChange={e =>
+                                                                setAntibiotics(prev =>
+                                                                    prev.map((item, i) =>
+                                                                        i === idx
+                                                                            ? { ...item, mic: e.target.value }
+                                                                            : item
+                                                                    )
+                                                                )
+                                                            }
+                                                        />
+                                                    </td>
+                                                    <td className="px-4 py-2 border-r border-slate-200 text-center">
+                                                        <select
+                                                            className="border border-slate-300 rounded px-2 py-1 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                                            value={ab.interpretation}
+                                                            onChange={e =>
+                                                                setAntibiotics(prev =>
+                                                                    prev.map((item, i) =>
+                                                                        i === idx
+                                                                            ? { ...item, interpretation: e.target.value }
+                                                                            : item
+                                                                    )
+                                                                )
+                                                            }
+                                                        >
+                                                            <option value="">Chọn</option>
+                                                            <option value="S">S</option>
+                                                            <option value="I">I</option>
+                                                            <option value="R">R</option>
+                                                        </select>
+                                                    </td>
+
+                                                    <td className="px-4 py-2 text-center">
+                                                        <button
+                                                            type="button"
+                                                            className="text-xs text-red-600 hover:text-red-700 underline"
+                                                            onClick={() =>
+                                                                setAntibiotics(prev =>
+                                                                    prev.filter((_, i) => i !== idx)
+                                                                )
+                                                            }
+                                                        >
+                                                            Xóa
+                                                        </button>
+                                                    </td>
+                                                </>
+                                            )}
                                         </tr>
                                     ))}
+                                    <tr
+                                        className="hover:bg-slate-50/50 cursor-pointer"
+                                        onClick={() =>
+                                            setAntibiotics(prev => [
+                                                ...prev,
+                                                { name: 'Kháng sinh mới', mic: '', interpretation: '', notes: '' }
+                                            ])
+                                        }
+                                    >
+                                        <td
+                                            className="px-4 py-3 text-sm font-medium text-blue-600 text-center"
+                                            colSpan={5}
+                                        >
+                                            + Thêm kháng sinh mới
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -87,14 +161,11 @@ export const Step4Antibiogram: React.FC<Step4Props> = ({ onNext, onPrev }) => {
 
             {/* Fixed Footer with buttons */}
             <div className="fixed bottom-0 left-72 right-0 bg-white border-t border-slate-200 p-4 px-8 flex items-center justify-between z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-                <button onClick={onPrev} className="px-6 py-3 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-2 border border-slate-200 rounded-lg bg-white">
+                <button onClick={onPrev} className="px-6 py-3 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-2 border border-slate-200 rounded-lg bg-red-300">
                     <span className="material-symbols-outlined text-[18px]">arrow_back</span> Quay lại
                 </button>
                 <div className="flex gap-3">
-                    <button className="flex items-center gap-2 rounded-lg bg-blue-50 px-6 py-3 text-sm font-bold text-blue-600 hover:bg-blue-100 transition-colors">
-                        <SaveOutlined /> Lưu nháp
-                    </button>
-                    <button onClick={onNext} className="flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-white hover:bg-blue-600 shadow-lg shadow-blue-500/20 transition-all active:scale-95">
+                    <button onClick={onNext} className="flex items-center gap-2 rounded-lg bg-primary px-6 py-3  font-bold text-white hover:bg-blue-600 shadow-lg shadow-blue-500/20 transition-all active:scale-95">
                         Tính toán phác đồ AI <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
                     </button>
                 </div>

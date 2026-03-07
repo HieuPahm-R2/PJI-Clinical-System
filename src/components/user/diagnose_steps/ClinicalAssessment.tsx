@@ -104,9 +104,9 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({ onNe
           </p>
         </div>
         <div className="flex items-center gap-3 z-10">
-          <button onClick={onPrev} className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors bg-white border border-slate-200 rounded-lg">Quay lại</button>
-          <button onClick={onNext} className="flex items-center justify-center gap-2 px-5 h-10 bg-primary hover:bg-primary-dark text-white font-bold text-sm rounded-lg shadow-md transition-all">
-            Đến bảng kháng sinh đồ
+          <button onClick={onPrev} className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors bg-red-300 border border-slate-200 rounded-lg">Quay lại</button>
+          <button onClick={onNext} className="flex items-center justify-center gap-2 px-5 h-10 bg-primary hover:bg-primary-dark text-white font-bold text-md rounded-lg shadow-md transition-all">
+            Tiếp tục <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
           </button>
         </div>
       </header>
@@ -360,66 +360,13 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({ onNe
                   </div>
                 </div>
 
-                {/* 2.3 Fluid Tests */}
-                <div className="border-b border-slate-200">
-                  <div className="bg-gradient-to-r from-purple-50 to-slate-50 px-6 py-3 border-b border-purple-100">
-                    <h4 className="text-purple-900 font-bold text-base flex items-center gap-2">
-                      <span className="flex items-center justify-center w-5 h-5 rounded bg-purple-500/10 text-purple-600 text-xs font-bold">3</span>
-                      Xét nghiệm dịch
-                    </h4>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left text-slate-700">
-                      <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
-                        <tr>
-                          <th className="px-4 py-3 border-r border-slate-200">Tên xét nghiệm</th>
-                          <th className="px-4 py-3 border-r border-slate-200 w-32">Kết quả</th>
-                          <th className="px-4 py-3 border-r border-slate-200 w-16 text-center">Ghi chú</th>
-                          <th className="px-4 py-3 border-r border-slate-200 w-32">Chỉ số BT</th>
-                          <th className="px-4 py-3">Đơn vị</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-200">
-                        {clinical.fluidAnalysis?.map((test, index) => (
-                          <tr key={test.id} className="hover:bg-slate-50/50">
-                            <td className="px-4 py-2 font-medium text-slate-900 border-r border-slate-200">{test.name}</td>
-                            <td className="px-4 py-2 border-r border-slate-200 p-0">
-                              <input
-                                type="text"
-                                value={test.result}
-                                onChange={(e) => {
-                                  const newTests = [...clinical.fluidAnalysis];
-                                  newTests[index].result = e.target.value;
-                                  setClinical(prev => ({ ...prev, fluidAnalysis: newTests }));
-                                }}
-                                className="w-full h-full px-4 py-2 border-none bg-transparent focus:ring-inset focus:ring-2 focus:ring-primary outline-none"
-                              />
-                            </td>
-                            <td className="px-4 py-2 border-r border-slate-200 text-center font-bold">
-                              {(() => {
-                                const status = getTestStatus(test.result, test.normalRange);
-                                return status ? (
-                                  <span className={status === 'H' ? 'text-red-600 font-bold' : 'text-yellow-600 font-bold'}>
-                                    {status}
-                                  </span>
-                                ) : null;
-                              })()}
-                            </td>
-                            <td className="px-4 py-2 border-r border-slate-200 text-slate-700">{test.normalRange}</td>
-                            <td className="px-4 py-2 text-slate-500 bg-slate-50/30">{test.unit}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
 
-                {/* 2.4 Cấy khuẩn & Nhuộm Gram */}
+                {/* 2.3 Xét nghiệm vi sinh */}
                 <div>
                   <div className="bg-gradient-to-r from-amber-50 to-slate-50 px-6 py-3 border-b border-amber-100">
                     <h4 className="text-amber-900 font-bold text-base flex items-center gap-2">
-                      <span className="flex items-center justify-center w-5 h-5 rounded bg-amber-500/10 text-amber-600 text-xs font-bold">4</span>
-                      Cấy khuẩn & Nhuộm Gram
+                      <span className="flex items-center justify-center w-5 h-5 rounded bg-amber-500/10 text-amber-600 text-xs font-bold">3</span>
+                      Xét nghiệm vi sinh
                     </h4>
                   </div>
                   <div className="overflow-x-auto">
