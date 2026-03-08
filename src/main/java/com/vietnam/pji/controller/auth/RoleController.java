@@ -1,62 +1,54 @@
 package com.vietnam.pji.controller.auth;
 
+import com.turkraft.springfilter.boot.Filter;
 import com.vietnam.pji.dto.response.PaginationResultDTO;
+import com.vietnam.pji.dto.response.ResponseData;
 import com.vietnam.pji.model.auth.Role;
 import com.vietnam.pji.repository.RoleRepository;
 import com.vietnam.pji.services.RoleService;
-import org.springframework.web.bind.annotation.RestController;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.turkraft.springfilter.boot.Filter;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("${api.prefix}")
+@RequiredArgsConstructor
 public class RoleController {
+
     private final RoleService roleService;
     private final RoleRepository roleRepository;
 
-    public RoleController(RoleService roleService, RoleRepository roleRepository) {
-        this.roleService = roleService;
-        this.roleRepository = roleRepository;
-    }
-
     @PostMapping("/add-role")
-    public ResponseEntity<Role> create(@RequestBody Role data) {
-        if (this.roleRepository.existsByName(data.getName())) {
+    @ResponseStatus(HttpStatus.CREATED)
+    public ResponseData<Role> create(@RequestBody Role data) {
+        if (roleRepository.existsByName(data.getName())) {
             throw new IllegalArgumentException("Dữ liệu bị trùng lặp");
         }
-        return ResponseEntity.ok().body(this.roleService.create(data));
+        return new ResponseData<>(HttpStatus.CREATED.value(), "Role created successfully", roleService.create(data));
     }
 
     @PutMapping("/update-role")
-    public ResponseEntity<Role> update(@RequestBody Role data) {
-        return ResponseEntity.ok().body(this.roleService.update(data));
+    public ResponseData<Void> update(@RequestBody Role data) {
+        roleService.update(data);
+        return new ResponseData<>(HttpStatus.OK.value(), "Role updated successfully");
     }
 
     @DeleteMapping("/delete-role/{id}")
-    public ResponseEntity<Void> delete(@PathVariable("id") long id){
-        this.roleService.delete(id);
-        return ResponseEntity.ok().body(null);
-    }
-
-    @GetMapping("/roles")
-    public ResponseEntity<PaginationResultDTO> handleFetchAllRole(
-            @Filter Specification<Role> spec, Pageable pageable) {
-        return ResponseEntity.ok().body(this.roleService.fetchAll(spec, pageable));
+    public ResponseData<Void> delete(@PathVariable("id") long id) {
+        roleService.delete(id);
+        return new ResponseData<>(HttpStatus.OK.value(), "Role deleted successfully");
     }
 
     @GetMapping("/role/{id}")
-    public ResponseEntity<Role> handleFetchSingle(@PathVariable("id") long id) {
-        return ResponseEntity.ok().body(this.roleService.fetchById(id));
+    public ResponseData<Role> handleFetchSingle(@PathVariable("id") long id) {
+        return new ResponseData<>(HttpStatus.OK.value(), "Fetch role successfully", roleService.fetchById(id));
+    }
+
+    @GetMapping("/roles")
+    public ResponseData<PaginationResultDTO> handleFetchAllRole(
+            @Filter Specification<Role> spec, Pageable pageable) {
+        return new ResponseData<>(HttpStatus.OK.value(), "Fetch roles successfully", roleService.fetchAll(spec, pageable));
     }
 }

@@ -1,6 +1,8 @@
 package com.vietnam.pji.controller.auth;
+
 import com.vietnam.pji.dto.request.LoginDTO;
 import com.vietnam.pji.dto.response.ResLoginDTO;
+import com.vietnam.pji.dto.response.ResponseData;
 import com.vietnam.pji.exception.InvalidDataException;
 import com.vietnam.pji.exception.ResourceNotFoundException;
 import com.vietnam.pji.model.auth.User;
@@ -19,17 +21,13 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.CookieValue;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("${api.prefix}")
 public class AuthController {
+
     @Value("${group29.jwt.refresh-token-validity-in-seconds}")
     private long refreshTokenExpire;
 
@@ -39,11 +37,9 @@ public class AuthController {
     private final SecurityUtils securityUtils;
 
     @PostMapping("/auth/login")
-    public ResponseEntity<ResLoginDTO> login(@Valid @RequestBody LoginDTO loginData) {
-        // transfer input username/password
+    public ResponseEntity<ResponseData<ResLoginDTO>> login(@Valid @RequestBody LoginDTO loginData) {
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                 loginData.getUsername(), loginData.getPassword());
-        // xác thực người dùng ==> cần có loadUserByUserName
         Authentication authentication = authenticationManagerBuilder.getObject().authenticate(authenticationToken);
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
@@ -57,16 +53,12 @@ public class AuthController {
                     realUser.getRole());
             resLoginDTO.setUser(userLog);
         }
-        // generate access token
         String access_token = this.securityUtils.generateAccessToken(authentication.getName(), resLoginDTO);
         resLoginDTO.setAccessToken(access_token);
-        // gen refresh token
         String refresh_token = this.securityUtils.generateRefreshToken(loginData.getUsername(), resLoginDTO);
-        // Lưu refresh token vào Redis
         this.RedisService.saveRefreshToken(loginData.getUsername(), refresh_token, refreshTokenExpire);
-        // Giữ lại database để fallback (hybrid approach)
         this.userService.saveRefreshToken(refresh_token, loginData.getUsername());
-        // setup cookies
+
         ResponseCookie resCookies = ResponseCookie
                 .from("refresh-token", refresh_token)
                 .httpOnly(true)
@@ -74,53 +66,44 @@ public class AuthController {
                 .maxAge(refreshTokenExpire)
                 .build();
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, resCookies.toString()).body(resLoginDTO);
+                .header(HttpHeaders.SET_COOKIE, resCookies.toString())
+                .body(new ResponseData<>(HttpStatus.OK.value(), "Login successful", resLoginDTO));
     }
 
-
     @GetMapping("/auth/account")
-    public ResponseEntity<ResLoginDTO.GetAccountUser> getAccount() {
-        try {
-            String emailLogin = SecurityUtils.getCurrentUserLogin().isPresent()
-                    ? SecurityUtils.getCurrentUserLogin().get()
-                    : "";
-            User userCreated = this.userService.handleGetUserByUsername(emailLogin);
-            ResLoginDTO.UserData userData = new ResLoginDTO.UserData();
-            ResLoginDTO.GetAccountUser info = new ResLoginDTO.GetAccountUser();
-            if (userCreated != null) {
-                userData.setId(userCreated.getId());
-                userData.setEmail(userCreated.getEmail());
-                userData.setName(userCreated.getFullName());
-                userData.setRole(userCreated.getRole());
-                info.setUser(userData);
-            }
-            return ResponseEntity.ok().body(info);
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
+    public ResponseData<ResLoginDTO.GetAccountUser> getAccount() {
+        String emailLogin = SecurityUtils.getCurrentUserLogin().isPresent()
+                ? SecurityUtils.getCurrentUserLogin().get()
+                : "";
+        User userCreated = this.userService.handleGetUserByUsername(emailLogin);
+        ResLoginDTO.UserData userData = new ResLoginDTO.UserData();
+        ResLoginDTO.GetAccountUser info = new ResLoginDTO.GetAccountUser();
+        if (userCreated != null) {
+            userData.setId(userCreated.getId());
+            userData.setEmail(userCreated.getEmail());
+            userData.setName(userCreated.getFullName());
+            userData.setRole(userCreated.getRole());
+            info.setUser(userData);
         }
-
+        return new ResponseData<>(HttpStatus.OK.value(), "Fetch account successfully", info);
     }
 
     @GetMapping("/auth/refresh")
-    public ResponseEntity<ResLoginDTO> getRefreshToken(
+    public ResponseEntity<ResponseData<ResLoginDTO>> getRefreshToken(
             @CookieValue(name = "refresh-token", defaultValue = "error") String refreshToken) throws Exception {
         if (refreshToken.equals("error")) {
             throw new ResourceNotFoundException("Refresh token not be attached in request");
         }
         Jwt correctToken;
         try {
-            // running check valid
             correctToken = this.securityUtils.confirmValidRefreshToken(refreshToken);
         } catch (Exception ex) {
-            // Nếu token hết hạn hoặc không hợp lệ, trả về lỗi 400
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(null);
+                    .body(new ResponseData<>(HttpStatus.BAD_REQUEST.value(), "Invalid or expired refresh token"));
         }
         String email = correctToken.getSubject();
 
-        // Kiểm tra refresh token từ Redis trước
         if (!this.RedisService.validateRefreshToken(email, refreshToken)) {
-            // Fallback kiểm tra từ database nếu Redis không có
             User currentUser = this.userService.fetchWithTokenAndEmail(refreshToken, email);
             if (currentUser == null) {
                 throw new Exception("Invalid refresh token");
@@ -137,15 +120,12 @@ public class AuthController {
                     realUser.getRole());
             resLoginDTO.setUser(userLog);
         }
-        // generate access token
         String access_token = this.securityUtils.generateAccessToken(email, resLoginDTO);
         resLoginDTO.setAccessToken(access_token);
-        // gen refresh token
         String refresh_token = this.securityUtils.generateRefreshToken(email, resLoginDTO);
-        // Lưu vào Redis và database
         this.RedisService.saveRefreshToken(email, refresh_token, refreshTokenExpire);
         this.userService.saveRefreshToken(refresh_token, email);
-        // setup cookies
+
         ResponseCookie resCookies = ResponseCookie
                 .from("refresh-token", refresh_token)
                 .httpOnly(true)
@@ -154,19 +134,20 @@ public class AuthController {
                 .build();
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, resCookies.toString())
-                .body(resLoginDTO);
+                .body(new ResponseData<>(HttpStatus.OK.value(), "Token refreshed successfully", resLoginDTO));
     }
 
     @PostMapping("/auth/logout")
-    public ResponseEntity<Void> LogoutAccount() {
-        String email = SecurityUtils.getCurrentUserLogin().isPresent() ? SecurityUtils.getCurrentUserLogin().get() : "";
+    public ResponseEntity<ResponseData<Void>> logoutAccount() {
+        String email = SecurityUtils.getCurrentUserLogin().isPresent()
+                ? SecurityUtils.getCurrentUserLogin().get()
+                : "";
         if (email.isEmpty()) {
             throw new InvalidDataException("Something wrong with access token");
         }
-        // Xóa từ Redis
         this.RedisService.deleteRefreshToken(email);
-        // Xóa từ database (fallback)
         this.userService.saveRefreshToken(null, email);
+
         ResponseCookie removeCookies = ResponseCookie
                 .from("refresh-token", null)
                 .httpOnly(true)
@@ -175,6 +156,6 @@ public class AuthController {
                 .build();
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, removeCookies.toString())
-                .body(null);
+                .body(new ResponseData<>(HttpStatus.OK.value(), "Logout successful"));
     }
 }

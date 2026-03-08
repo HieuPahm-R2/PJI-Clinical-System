@@ -1,11 +1,12 @@
 package com.vietnam.pji.controller.auth;
 
+import com.turkraft.springfilter.boot.Filter;
 import com.vietnam.pji.dto.request.UserRequestDTO;
 import com.vietnam.pji.dto.response.PaginationResultDTO;
+import com.vietnam.pji.dto.response.ResponseData;
 import com.vietnam.pji.dto.response.UserDetailResponse;
 import com.vietnam.pji.model.auth.User;
 import com.vietnam.pji.services.UserService;
-import com.turkraft.springfilter.boot.Filter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,29 +28,31 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping("/add-user")
-    public ResponseEntity<UserDetailResponse> createUser(@Valid @RequestBody UserRequestDTO request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(userService.create(request));
+    @ResponseStatus(HttpStatus.CREATED)
+    public ResponseData<UserDetailResponse> createUser(@Valid @RequestBody UserRequestDTO request) {
+        return new ResponseData<>(HttpStatus.CREATED.value(), "User created successfully", userService.create(request));
     }
 
     @PutMapping("/update-user")
-    public ResponseEntity<UserDetailResponse> updateUser(@Valid @RequestBody UserRequestDTO request) {
-        return ResponseEntity.ok(userService.update(request));
+    public ResponseData<Void> updateUser(@Valid @RequestBody UserRequestDTO request) {
+        userService.update(request);
+        return new ResponseData<>(HttpStatus.OK.value(), "User updated successfully");
     }
 
     @GetMapping("/user/{id}")
-    public ResponseEntity<UserDetailResponse> getInfo(@PathVariable long id) {
-        return ResponseEntity.ok(userService.getInfo(id));
+    public ResponseData<UserDetailResponse> getInfo(@PathVariable long id) {
+        return new ResponseData<>(HttpStatus.OK.value(), "Fetch user successfully", userService.getInfo(id));
     }
 
     @DeleteMapping("/delete-user/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable long id) {
+    public ResponseData<Void> deleteUser(@PathVariable long id) {
         userService.delete(id);
-        return ResponseEntity.noContent().build();
+        return new ResponseData<>(HttpStatus.OK.value(), "User deleted successfully");
     }
 
     @GetMapping("/users")
-    public ResponseEntity<PaginationResultDTO> getAllUsersInfo(
+    public ResponseData<PaginationResultDTO> getAllUsersInfo(
             @Filter Specification<User> spec, Pageable pageable) {
-        return ResponseEntity.ok(userService.getAll(spec, pageable));
+        return new ResponseData<>(HttpStatus.OK.value(), "Fetch users successfully", userService.getAll(spec, pageable));
     }
 }
