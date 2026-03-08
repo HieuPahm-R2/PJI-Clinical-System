@@ -1,0 +1,49 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/pji_database}
+    username: postgres
+    password: 123456
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate: format_sql:true
+  application:
+    name: pji
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: hieuxitsuki05@gmail.com
+    password: ejdvrfwylicuhvda
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+  servlet:
+    multipart:
+      max-file-size: 1000MB
+      max-request-size: 1000MB
+  #flyway
+  # dẫn tới thư mục chứa các script Flyway
+  flyway:
+    locations: classpath:/db/migration,classpath:/dev/db/migration
+    #Phiên bản baseline sẽ = 1 và không thực hiện bất kỳ thay đổi nào trong DB
+    baseline-on-migrate: true
+    baseline-version: 0
+secure:
+  jwt:
+    base64-secret: qoAEABDke07+AVLepXB4aCMtsT0wMAqR5x2VFyldsnx6e75YQkJH2UcZKTjEyoNgG71SBCXfq5N6NVZxWOfsHQ==
+    access-token-validity-in-seconds: 86400
+    refresh-token-validity-in-seconds: 864000
+api:
+  prefix: /api/v1
+  messages:
+    basename: i18n/messages
+    encoding: UTF-8
+    default-locale: en
+server:
+  port: 8085
+#config upload file
+hieupham:
+  upload-file:
+    base-uri: ${HIEUPAHM_UPLOAD_FILE_BASE_URI:file:///D:/WhatWeDone-Will/EMR-restful-project/storage/}
