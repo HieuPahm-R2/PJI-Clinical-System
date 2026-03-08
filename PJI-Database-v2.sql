@@ -1,0 +1,489 @@
+-- ==========================================
+-- PJI DATABASE - VERSION 2
+-- Fixes: syntax errors, trailing commas
+-- Optimized: indexes for performance at scale
+-- ==========================================
+
+-- ==========================================
+-- 1. EXTENSIONS & ENUMS
+-- ==========================================
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+CREATE TYPE recommendation_category AS ENUM (
+    'SYSTEMIC_ANTIBIOTIC',
+    'LOCAL_ANTIBIOTIC',
+    'SURGERY_PROCEDURE',
+    'DIAGNOSTIC_TEST'
+);
+
+-- ==========================================
+-- 2. USER & PERMISSIONS (RBAC)
+-- ==========================================
+CREATE TABLE roles (
+    id          BIGSERIAL PRIMARY KEY,
+    name        VARCHAR(50) UNIQUE NOT NULL,
+    description TEXT,
+    active      BOOLEAN   DEFAULT TRUE,
+    created_at  TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- FIX: Bỏ dấu phẩy thừa sau cột cuối, thêm dấu ; kết thúc bảng
+CREATE TABLE permissions (
+    id          BIGSERIAL PRIMARY KEY,
+    api_path    VARCHAR(255) UNIQUE NOT NULL,
+    method      VARCHAR(255),
+    module      VARCHAR(255),
+    name        VARCHAR(255),
+    created_by  VARCHAR(255),
+    created_at  TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_by  VARCHAR(255),
+    updated_at  TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE role_permissions (
+    role_id       BIGINT NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+    permission_id BIGINT NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
+    PRIMARY KEY (role_id, permission_id)
+);
+
+CREATE TABLE users (
+    id            BIGSERIAL PRIMARY KEY,
+    role_id       BIGINT REFERENCES roles(id),
+    email         VARCHAR(255) UNIQUE NOT NULL,
+    password      VARCHAR(255) NOT NULL,
+    fullname      VARCHAR(255) NOT NULL,
+    phone         VARCHAR(20),
+    department    VARCHAR(100),
+    is_active     BOOLEAN   DEFAULT TRUE,
+    last_login_at TIMESTAMPTZ,
+    created_at    TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at    TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ==========================================
+-- 3. PATIENT CORE DATA
+-- ==========================================
+CREATE TABLE patients (
+    id               BIGSERIAL PRIMARY KEY,
+    full_name        VARCHAR(100) NOT NULL,
+    date_of_birth    DATE         NOT NULL,
+    gender           VARCHAR(15),             -- 'Male', 'Female', 'Other'
+    identity_card    VARCHAR(50)  UNIQUE,
+    insurance_number VARCHAR(50),
+    insurance_expired DATE,
+    nationality      VARCHAR(50),
+    ethnicity        VARCHAR(50),
+    phone            VARCHAR(20),
+    career           VARCHAR(50),
+    subject          VARCHAR(50),
+    address          TEXT,
+    relative_info    JSONB,                   -- Lưu tên/SĐT người thân
+    created_at       TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at       TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Mỗi lần bệnh nhân nhập viện/điều trị là một Episode
+CREATE TABLE pji_episodes (
+    id              BIGSERIAL PRIMARY KEY,
+    patient_id      BIGINT REFERENCES patients(id) ON DELETE CASCADE,
+    admission_date  DATE NOT NULL,
+    discharge_date  DATE,
+    treatment_days  INT,
+    reason          TEXT,
+    department      VARCHAR(255),
+    direct          VARCHAR(50),             -- trực tiếp vào: cấp cứu / kkb / khoa điều trị
+    days_treatment  INT,
+    referral_source VARCHAR(255),            -- nơi giới thiệu
+    result          VARCHAR(30),             -- kết quả điều trị
+    created_by      BIGINT REFERENCES users(id),
+    created_at      TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ==========================================
+-- 4. CLINICAL & LAB DATA (TIME-SERIES)
+-- ==========================================
+
+-- Tiền sử bệnh (quan hệ 1-1 với Episode)
+CREATE TABLE medical_histories (
+    episode_id    BIGINT PRIMARY KEY REFERENCES pji_episodes(id) ON DELETE CASCADE,
+    medical_history TEXT,
+    process         TEXT,
+    is_allergy      BOOLEAN,
+    allergy_note    VARCHAR,
+    is_drug         BOOLEAN,
+    drug_note       VARCHAR,
+    is_alcohol      BOOLEAN,
+    alcohol_note    VARCHAR,
+    is_smoking      BOOLEAN,
+    smoking_note    VARCHAR,
+    is_other        BOOLEAN,
+    other_note      VARCHAR
+);
+
+-- Các chỉ số lâm sàng (có thể đo nhiều lần)
+CREATE TABLE clinical_records (
+    id               BIGSERIAL PRIMARY KEY,
+    episode_id       BIGINT REFERENCES pji_episodes(id) ON DELETE CASCADE,
+    on_illness       DATE,                   -- ngày khởi phát bệnh
+    temperature      DECIMAL(4,1),
+    blood_pressure   VARCHAR(20),            -- '120/80'
+    heart_rate       INT,
+    respiratory_rate INT,
+    bmi              DECIMAL(4,2),
+    local_symptoms   JSONB,                  -- {'swelling': true, 'fistula': false, ...}
+    notations        TEXT,
+    created_at       TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE surgeries (
+    id           BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    episode_id   BIGINT NOT NULL REFERENCES pji_episodes(id) ON DELETE CASCADE,
+    surgery_date DATE   NOT NULL,
+    surgery_type VARCHAR(255) NOT NULL,      -- Debridement, 1-stage exchange, 2-stage exchange
+    wound_status VARCHAR(50),               -- Clean, Contaminated, etc.
+    findings     TEXT,
+    created_at   TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at   TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Xét nghiệm Lab
+CREATE TABLE lab_results (
+    id            BIGSERIAL PRIMARY KEY,
+    episode_id    BIGINT REFERENCES pji_episodes(id) ON DELETE CASCADE,
+    -- Chỉ số máu (viêm hệ thống)
+    esr           INT,                       -- Tốc độ máu lắng (mm/h)
+    wbc_blood     DECIMAL(10,2),             -- Bạch cầu máu
+    neut          DECIMAL(5,2),
+    mono          DECIMAL(4,1),              -- bạch cầu đơn nhân
+    lymph         DECIMAL(4,1),
+    eos           DECIMAL(4,1),
+    baso          DECIMAL(4,1),
+    rbc           DECIMAL(5,2),              -- tổng số tế bào hồng cầu
+    hgb           INT,
+    hct           DECIMAL(5,3),
+    rdw           DECIMAL(5,2),
+    ig            DECIMAL(5,2),
+    mcv           DECIMAL(5,2),
+    mch           DECIMAL(5,2),
+    mchc          INT,
+    -- Chỉ số dịch khớp (viêm tại chỗ)
+    crp           DECIMAL(10,2),
+    synovial_wbc  INT,
+    synovial_pmn  DECIMAL(5,2),
+    -- Các chỉ số sinh hóa (glucose, ure, creatinine, alt, ast, alb, natri, clo, kali, hba1c...)
+    biochemical_data JSONB,
+    created_at    TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Hình ảnh y tế
+CREATE TABLE image_results (
+    id            BIGSERIAL PRIMARY KEY,
+    episode_id    BIGINT REFERENCES pji_episodes(id) ON DELETE CASCADE,
+    type          VARCHAR(50),               -- 'X-RAY', 'MRI', 'CT', 'ULTRASOUND'
+    imaging_date  DATE,
+    findings      TEXT,
+    file_metadata JSONB,                     -- {'path': 's3://...', 'thumbnail': '...'}
+    created_at    TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Vi sinh
+CREATE TABLE culture_results (
+    id              BIGSERIAL PRIMARY KEY,
+    episode_id      BIGINT REFERENCES pji_episodes(id) ON DELETE CASCADE,
+    sample_type     VARCHAR(100),            -- 'Synovial Fluid', 'Tissue', 'Blood'
+    incubation_days INT,
+    organism_name   VARCHAR(255),            -- Staphylococcus aureus
+    result          VARCHAR(50),
+    gram_type       VARCHAR(20),             -- 'Positive', 'Negative'
+    notes           TEXT,
+    created_at      TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE sensitivity_results (
+    id               BIGSERIAL PRIMARY KEY,
+    culture_id       BIGINT REFERENCES culture_results(id) ON DELETE CASCADE,
+    antibiotic_name  VARCHAR(100) NOT NULL,
+    mic_value        VARCHAR(20),
+    sensitivity_code VARCHAR(10),            -- 'S' (Susceptible), 'I', 'R' (Resistant)
+    created_at       TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ==========================================
+-- 5. AI DECISION SUPPORT & RAG EVIDENCE
+-- ==========================================
+
+-- Bảng AI Recommendation (IMMUTABLE sau khi tạo — không UPDATE)
+CREATE TABLE ai_recommendations (
+    id            BIGSERIAL PRIMARY KEY,
+    episode_id    BIGINT REFERENCES pji_episodes(id) ON DELETE CASCADE,
+    category      VARCHAR(100) NOT NULL,     -- 'SYSTEMIC_ANTIBIOTIC', 'LOCAL_ANTIBIOTIC', 'SURGERY_PROCEDURE'
+    ai_confidence DECIMAL(5,4),             -- Độ tự tin của model (0.0000 - 1.0000)
+    created_at    TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Chi tiết kháng sinh tại chỗ do AI đề xuất
+CREATE TABLE rec_antibiolocal_details (
+    id                BIGSERIAL PRIMARY KEY,
+    recommendation_id BIGINT REFERENCES ai_recommendations(id) ON DELETE CASCADE,
+    form              VARCHAR(50),           -- Dạng bào chế
+    drug_name         VARCHAR(100),
+    dose              DECIMAL(10,2),
+    type              VARCHAR(200),          -- 1.Vết thương hở | 2.Nhiễm trùng xương | 3.Nhiễm trùng da
+    frequency         VARCHAR(100),
+    technique         TEXT,
+    warning           TEXT,
+    duration_days     INT
+);
+
+-- Chi tiết kháng sinh toàn thân do AI đề xuất
+CREATE TABLE rec_antibiosystem_details (
+    id                BIGSERIAL PRIMARY KEY,
+    recommendation_id BIGINT REFERENCES ai_recommendations(id) ON DELETE CASCADE,
+    method            VARCHAR(255),
+    drug_name         VARCHAR(200),
+    dose_mg           DECIMAL(10,2),
+    frequency         VARCHAR(100),
+    sequence_number   INT NOT NULL,
+    phase_label       VARCHAR(50),           -- "TUẦN 1-2", "TUẦN 3-6"
+    duration          INT
+);
+
+-- Chi tiết phẫu thuật do AI đề xuất
+CREATE TABLE rec_surgery_details (
+    id                       BIGSERIAL PRIMARY KEY,
+    recommendation_id        BIGINT REFERENCES ai_recommendations(id) ON DELETE CASCADE,
+    approach                 VARCHAR(255),
+    priority_level           VARCHAR(50),
+    numbness                 VARCHAR(255),   -- phương pháp vô cảm
+    prophylactic_antibio     VARCHAR(200),
+    total_estimated_duration VARCHAR(50)
+);
+
+CREATE TABLE rec_surgery_steps (
+    id               BIGSERIAL PRIMARY KEY,
+    rec_surgery_id   BIGINT REFERENCES rec_surgery_details(id) ON DELETE CASCADE,
+    sequence_number  INT          NOT NULL,
+    step_title       VARCHAR(255) NOT NULL,
+    description      TEXT,
+    duration_est     VARCHAR(50),
+    execution_timing VARCHAR(255),
+    note             TEXT,
+    is_mandatory     BOOLEAN DEFAULT TRUE,
+    risk_level       VARCHAR(50),
+    created_at       TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- RAG Citations — nguồn tài liệu AI dùng làm bằng chứng
+CREATE TABLE ai_rag_citations (
+    id                BIGSERIAL PRIMARY KEY,
+    recommendation_id BIGINT REFERENCES ai_recommendations(id) ON DELETE CASCADE,
+    source_title      TEXT NOT NULL,         -- Tên guideline (e.g., IDSA PJI Guideline)
+    source_section    VARCHAR(255),
+    excerpt           TEXT,
+    source_url        TEXT,
+    page_number       INT,
+    relevance_score   DECIMAL(5,4),
+    created_at        TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Dự đoán rủi ro tổng quát của AI
+CREATE TABLE ai_predictions (
+    id                    BIGSERIAL PRIMARY KEY,
+    episode_id            BIGINT REFERENCES pji_episodes(id) ON DELETE CASCADE,
+    risk_level            VARCHAR(50),       -- 'High', 'Medium', 'Low'
+    infection_probability DECIMAL(5,2),
+    reasoning_json        JSONB,
+    created_at            TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ==========================================
+-- 5b. PHÁC ĐỒ DO BÁC SĨ XÁC NHẬN / CHỈNH SỬA
+-- ==========================================
+
+-- Bảng "đầu" — một plan được tạo từ AI suggestion hoặc bác sĩ tạo thủ công
+-- ai_recommendation_id = NULL → bác sĩ tạo thủ công, không dựa trên AI
+CREATE TABLE treatment_plans (
+    id                   BIGSERIAL PRIMARY KEY,
+    episode_id           BIGINT NOT NULL REFERENCES pji_episodes(id) ON DELETE CASCADE,
+    ai_recommendation_id BIGINT REFERENCES ai_recommendations(id) ON DELETE SET NULL,
+    category             VARCHAR(100) NOT NULL,  -- 'SYSTEMIC_ANTIBIOTIC', 'LOCAL_ANTIBIOTIC', 'SURGERY_PROCEDURE'
+    status               VARCHAR(30)  DEFAULT 'DRAFT', -- 'DRAFT', 'FINALIZED', 'SUPERSEDED'
+    created_by           BIGINT       NOT NULL REFERENCES users(id),
+    finalized_by         BIGINT REFERENCES users(id),
+    finalized_at         TIMESTAMPTZ,
+    doctor_notes         TEXT,                   -- Lý do bác sĩ chỉnh sửa so với AI
+    created_at           TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at           TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Mirror rec_antibiosystem_details — phiên bản bác sĩ xác nhận
+CREATE TABLE plan_antibiosystem_details (
+    id              BIGSERIAL PRIMARY KEY,
+    plan_id         BIGINT NOT NULL REFERENCES treatment_plans(id) ON DELETE CASCADE,
+    method          VARCHAR(255),
+    drug_name       VARCHAR(200),
+    dose_mg         DECIMAL(10,2),
+    frequency       VARCHAR(100),
+    sequence_number INT NOT NULL,
+    phase_label     VARCHAR(50),
+    duration        INT,
+    is_modified     BOOLEAN DEFAULT FALSE    -- TRUE nếu bác sĩ đã sửa so với AI gốc
+);
+
+-- Mirror rec_antibiolocal_details — phiên bản bác sĩ xác nhận
+CREATE TABLE plan_antibiolocal_details (
+    id            BIGSERIAL PRIMARY KEY,
+    plan_id       BIGINT NOT NULL REFERENCES treatment_plans(id) ON DELETE CASCADE,
+    form          VARCHAR(50),
+    drug_name     VARCHAR(100),
+    dose          DECIMAL(10,2),
+    type          VARCHAR(200),
+    frequency     VARCHAR(100),
+    technique     TEXT,
+    warning       TEXT,
+    duration_days INT,
+    is_modified   BOOLEAN DEFAULT FALSE
+);
+
+-- Mirror rec_surgery_details — phiên bản bác sĩ xác nhận
+CREATE TABLE plan_surgery_details (
+    id                       BIGSERIAL PRIMARY KEY,
+    plan_id                  BIGINT NOT NULL REFERENCES treatment_plans(id) ON DELETE CASCADE,
+    approach                 VARCHAR(255),
+    priority_level           VARCHAR(50),
+    numbness                 VARCHAR(255),
+    prophylactic_antibio     VARCHAR(200),
+    total_estimated_duration VARCHAR(50),
+    is_modified              BOOLEAN DEFAULT FALSE
+);
+
+-- Mirror rec_surgery_steps — phiên bản bác sĩ xác nhận
+CREATE TABLE plan_surgery_steps (
+    id               BIGSERIAL PRIMARY KEY,
+    plan_surgery_id  BIGINT NOT NULL REFERENCES plan_surgery_details(id) ON DELETE CASCADE,
+    sequence_number  INT          NOT NULL,
+    step_title       VARCHAR(255) NOT NULL,
+    description      TEXT,
+    duration_est     VARCHAR(50),
+    execution_timing VARCHAR(255),
+    note             TEXT,
+    is_mandatory     BOOLEAN DEFAULT TRUE,
+    risk_level       VARCHAR(50),
+    is_modified      BOOLEAN DEFAULT FALSE,
+    created_at       TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ==========================================
+-- 6. AI CHAT SYSTEM
+-- ==========================================
+CREATE TABLE ai_chat_sessions (
+    id          BIGSERIAL PRIMARY KEY,
+    user_id     BIGINT REFERENCES users(id),
+    episode_id  BIGINT REFERENCES pji_episodes(id),
+    title       VARCHAR(255),
+    is_archived BOOLEAN DEFAULT FALSE,
+    created_at  TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE ai_chat_messages (
+    id              BIGSERIAL PRIMARY KEY,
+    session_id      BIGINT REFERENCES ai_chat_sessions(id) ON DELETE CASCADE,
+    role            VARCHAR(15),             -- 'user', 'assistant', 'system'
+    content         TEXT NOT NULL,
+    tokens_used     INT,
+    latency_ms      INT,
+    references_json JSONB,
+    created_at      TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ==========================================
+-- 7. AUDIT LOGS
+-- ==========================================
+CREATE TABLE audit_logs (
+    id         BIGSERIAL PRIMARY KEY,
+    table_name VARCHAR(100) NOT NULL,
+    record_id  BIGINT       NOT NULL,
+    action     VARCHAR(20)  NOT NULL,        -- 'INSERT', 'UPDATE', 'DELETE', 'READ'
+    user_id    BIGINT REFERENCES users(id),
+    old_data   JSONB,
+    new_data   JSONB,
+    changes    JSONB,
+    ip_address VARCHAR(45),
+    notes      TEXT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ==========================================
+-- 8. INDEXES
+-- ==========================================
+
+-- ---- USERS & AUTH ----
+CREATE INDEX idx_users_email       ON users(email);
+CREATE INDEX idx_users_role        ON users(role_id);
+
+-- ---- PATIENTS ----
+-- Full-text search tên bệnh nhân (dùng GIN cho tiếng Việt)
+CREATE INDEX idx_patients_fullname_fts  ON patients USING GIN (to_tsvector('simple', full_name));
+CREATE INDEX idx_patients_identity_card ON patients(identity_card);
+CREATE INDEX idx_patients_insurance     ON patients(insurance_number);
+CREATE INDEX idx_patients_dob           ON patients(date_of_birth);
+
+-- ---- EPISODES ----
+CREATE INDEX idx_episodes_patient       ON pji_episodes(patient_id);
+CREATE INDEX idx_episodes_admission     ON pji_episodes(admission_date DESC);
+-- Composite: tìm episodes của bệnh nhân sắp xếp theo ngày (query phổ biến nhất)
+CREATE INDEX idx_episodes_patient_date  ON pji_episodes(patient_id, admission_date DESC);
+CREATE INDEX idx_episodes_department    ON pji_episodes(department);
+
+-- ---- CLINICAL & LAB ----
+CREATE INDEX idx_clinical_episode       ON clinical_records(episode_id);
+CREATE INDEX idx_clinical_episode_date  ON clinical_records(episode_id, created_at DESC);
+
+CREATE INDEX idx_lab_episode            ON lab_results(episode_id);
+CREATE INDEX idx_lab_episode_date       ON lab_results(episode_id, created_at DESC);
+
+CREATE INDEX idx_surgeries_episode      ON surgeries(episode_id);
+CREATE INDEX idx_surgeries_date         ON surgeries(surgery_date DESC);
+
+CREATE INDEX idx_image_episode          ON image_results(episode_id);
+CREATE INDEX idx_culture_episode        ON culture_results(episode_id);
+-- Tìm theo vi khuẩn (báo cáo, thống kê)
+CREATE INDEX idx_culture_organism       ON culture_results(organism_name);
+CREATE INDEX idx_sensitivity_culture    ON sensitivity_results(culture_id);
+-- Tìm kháng sinh nhạy/kháng (báo cáo)
+CREATE INDEX idx_sensitivity_code       ON sensitivity_results(sensitivity_code);
+
+-- ---- AI RECOMMENDATIONS (IMMUTABLE) ----
+CREATE INDEX idx_ai_rec_episode         ON ai_recommendations(episode_id);
+-- Bác sĩ thường filter theo episode + category
+CREATE INDEX idx_ai_rec_episode_cat     ON ai_recommendations(episode_id, category);
+CREATE INDEX idx_citation_rec           ON ai_rag_citations(recommendation_id);
+CREATE INDEX idx_ai_pred_episode        ON ai_predictions(episode_id);
+
+-- ---- TREATMENT PLANS (DOCTOR) ----
+CREATE INDEX idx_treatment_plans_episode        ON treatment_plans(episode_id);
+CREATE INDEX idx_treatment_plans_ai_rec         ON treatment_plans(ai_recommendation_id);
+-- Filter theo status (DRAFT / FINALIZED) + episode
+CREATE INDEX idx_treatment_plans_episode_status ON treatment_plans(episode_id, status);
+CREATE INDEX idx_treatment_plans_created_by     ON treatment_plans(created_by);
+
+CREATE INDEX idx_plan_sys_plan    ON plan_antibiosystem_details(plan_id);
+CREATE INDEX idx_plan_local_plan  ON plan_antibiolocal_details(plan_id);
+CREATE INDEX idx_plan_surg_plan   ON plan_surgery_details(plan_id);
+CREATE INDEX idx_plan_step_surg   ON plan_surgery_steps(plan_surgery_id);
+
+-- ---- AI CHAT ----
+CREATE INDEX idx_chat_session_user      ON ai_chat_sessions(user_id);
+CREATE INDEX idx_chat_session_episode   ON ai_chat_sessions(episode_id);
+CREATE INDEX idx_chat_msg_session       ON ai_chat_messages(session_id);
+-- Query tin nhắn theo thứ tự thời gian
+CREATE INDEX idx_chat_msg_session_time  ON ai_chat_messages(session_id, created_at ASC);
+
+-- ---- AUDIT LOGS ----
+CREATE INDEX idx_audit_table_record ON audit_logs(table_name, record_id);
+CREATE INDEX idx_audit_user         ON audit_logs(user_id);
+-- Query log gần nhất
+CREATE INDEX idx_audit_created      ON audit_logs(created_at DESC);
+-- Tìm log theo action type
+CREATE INDEX idx_audit_action       ON audit_logs(action, created_at DESC);
