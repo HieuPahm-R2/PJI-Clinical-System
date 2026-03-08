@@ -37,4 +37,6 @@ public class ResponseData<T> implements Serializable {
         this.status = status;
         this.message = message;
     }
+
+
 }

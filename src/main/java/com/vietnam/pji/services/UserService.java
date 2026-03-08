@@ -1,25 +1,28 @@
 package com.vietnam.pji.services;
 
+import com.vietnam.pji.dto.request.UserRequestDTO;
 import com.vietnam.pji.dto.response.PaginationResultDTO;
+import com.vietnam.pji.dto.response.UserDetailResponse;
 import com.vietnam.pji.model.auth.User;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 public interface UserService {
-    public RegisterDTO create(User data) throws Exception;
 
-    public UserDTO getInfo(Long id);
+    UserDetailResponse create(UserRequestDTO data);
 
-    public PaginationResultDTO getAll(Specification<User> spec, Pageable pageable);
+    UserDetailResponse update(UserRequestDTO data);
 
-    public void delete(Long id) throws Exception;
+    UserDetailResponse getInfo(Long id);
 
-    public UserDTO update(User data) throws Exception;
+    PaginationResultDTO getAll(Specification<User> spec, Pageable pageable);
 
-    public User handleGetUserByUsername(String username);
+    void delete(Long id);
 
-    // Authenticate
-    public User fetchWithTokenAndEmail(String token, String email);
+    // Auth helpers
+    User handleGetUserByUsername(String username);
 
-    public void saveRefreshToken(String token, String email);
+    User fetchWithTokenAndEmail(String token, String email);
+
+    void saveRefreshToken(String token, String email);
 }

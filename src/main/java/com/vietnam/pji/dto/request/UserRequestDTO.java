@@ -19,13 +19,15 @@ import java.util.Date;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserRequestDTO {
+    private Long id;
+
     @NotBlank(message = "fullName must be not blank")
     private String fullName;
 
     @NotBlank(message = "department must be not blank")
     private String department;
 
-    @Email(message = "email invalid format") // Chi chap nhan nhung gia tri dung dinh dang email
+    @Email(message = "email invalid format")
     private String email;
 
     @PhoneNumber(message = "phone invalid format")
@@ -44,4 +46,5 @@ public class UserRequestDTO {
     @EnumPattern(name = "status", regexp = "ACTIVE|INACTIVE|NONE")
     private UserStatus status;
 
+    private Long roleId;
 }

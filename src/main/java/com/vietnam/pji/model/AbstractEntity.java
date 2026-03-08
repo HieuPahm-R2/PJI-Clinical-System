@@ -2,16 +2,16 @@ package com.vietnam.pji.model;
 
 import java.util.Date;
 
+import com.vietnam.pji.utils.SecurityUtils;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
-
+@Getter
+@Setter
+@MappedSuperclass
 public class AbstractEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,4 +27,24 @@ public class AbstractEntity {
     @UpdateTimestamp
     @Temporal(TemporalType.TIMESTAMP)
     private Date updatedAt;
+
+    @Column(name = "created_by")
+    private String createdBy;
+
+    @Column(name = "created_by")
+    private String updatedBy;
+
+    @PrePersist
+    public void handleBeforeCreate() {
+        this.createdBy = SecurityUtils.getCurrentUserLogin().isPresent()
+                ? SecurityUtils.getCurrentUserLogin().get()
+                : " ";
+    }
+
+    @PreUpdate
+    public void handleBeforeUpdate() {
+        this.updatedBy = SecurityUtils.getCurrentUserLogin().isPresent()
+                ? SecurityUtils.getCurrentUserLogin().get()
+                : " ";
+    }
 }

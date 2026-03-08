@@ -11,14 +11,18 @@ spring:
       hibernate: format_sql:true
   application:
     name: pji
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: hieuxitsuki05@gmail.com
-    password: ejdvrfwylicuhvda
-    properties:
-      mail.smtp.auth: true
-      mail.smtp.starttls.enable: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      database: 0           # Database number
+      timeout: 60000
+      jedis:
+        pool:
+          max-active: 8     # Số connection tối đa
+          max-idle: 8       # Số idle connection tối đa
+          min-idle: 0       # Số idle connection tối thiểu
+          max-wait: -1ms    # Thời gian chờ tối đa
   servlet:
     multipart:
       max-file-size: 1000MB
@@ -33,17 +37,15 @@ spring:
 secure:
   jwt:
     base64-secret: qoAEABDke07+AVLepXB4aCMtsT0wMAqR5x2VFyldsnx6e75YQkJH2UcZKTjEyoNgG71SBCXfq5N6NVZxWOfsHQ==
-    access-token-validity-in-seconds: 86400
-    refresh-token-validity-in-seconds: 864000
+    refresh-token-validity-in-seconds: 604800  # 7 days
+    access-token-validity-in-seconds: 3600     # 1 hour
 api:
   prefix: /api/v1
   messages:
     basename: i18n/messages
     encoding: UTF-8
     default-locale: en
+
 server:
   port: 8085
-#config upload file
-hieupham:
-  upload-file:
-    base-uri: ${HIEUPAHM_UPLOAD_FILE_BASE_URI:file:///D:/WhatWeDone-Will/EMR-restful-project/storage/}
+

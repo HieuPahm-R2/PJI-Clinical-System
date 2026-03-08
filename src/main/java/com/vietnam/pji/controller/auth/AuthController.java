@@ -1,4 +1,13 @@
 package com.vietnam.pji.controller.auth;
+import com.vietnam.pji.dto.request.LoginDTO;
+import com.vietnam.pji.dto.response.ResLoginDTO;
+import com.vietnam.pji.exception.InvalidDataException;
+import com.vietnam.pji.exception.ResourceNotFoundException;
+import com.vietnam.pji.model.auth.User;
+import com.vietnam.pji.services.RedisService;
+import com.vietnam.pji.services.UserService;
+import com.vietnam.pji.utils.SecurityUtils;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -24,7 +33,8 @@ public class AuthController {
     @Value("${group29.jwt.refresh-token-validity-in-seconds}")
     private long refreshTokenExpire;
 
-    private final IUserService userService;
+    private final UserService userService;
+    private final RedisService RedisService;
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
     private final SecurityUtils securityUtils;
 
@@ -42,7 +52,7 @@ public class AuthController {
         if (realUser != null) {
             ResLoginDTO.UserData userLog = new ResLoginDTO.UserData(
                     realUser.getId(),
-                    realUser.getUsername(),
+                    realUser.getFullName(),
                     realUser.getEmail(),
                     realUser.getRole());
             resLoginDTO.setUser(userLog);
@@ -52,7 +62,10 @@ public class AuthController {
         resLoginDTO.setAccessToken(access_token);
         // gen refresh token
         String refresh_token = this.securityUtils.generateRefreshToken(loginData.getUsername(), resLoginDTO);
-        this.userService.saveRefreshToken(access_token, loginData.getUsername());
+        // Lưu refresh token vào Redis
+        this.RedisService.saveRefreshToken(loginData.getUsername(), refresh_token, refreshTokenExpire);
+        // Giữ lại database để fallback (hybrid approach)
+        this.userService.saveRefreshToken(refresh_token, loginData.getUsername());
         // setup cookies
         ResponseCookie resCookies = ResponseCookie
                 .from("refresh-token", refresh_token)
@@ -64,16 +77,10 @@ public class AuthController {
                 .header(HttpHeaders.SET_COOKIE, resCookies.toString()).body(resLoginDTO);
     }
 
-    @PostMapping("/auth/register")
-    @MessageApi("Register account")
-    public ResponseEntity<RegisterDTO> registerAccount(@Valid @RequestBody User dataUser) throws BadActionException {
-        // User accUser = this.userService.handleCreateUser(dataUser);
-        return ResponseEntity.status(HttpStatus.CREATED).body(this.userService.create(dataUser));
-    }
 
     @GetMapping("/auth/account")
     public ResponseEntity<ResLoginDTO.GetAccountUser> getAccount() {
-        try{
+        try {
             String emailLogin = SecurityUtils.getCurrentUserLogin().isPresent()
                     ? SecurityUtils.getCurrentUserLogin().get()
                     : "";
@@ -83,24 +90,22 @@ public class AuthController {
             if (userCreated != null) {
                 userData.setId(userCreated.getId());
                 userData.setEmail(userCreated.getEmail());
-                userData.setName(userCreated.getUsername());
+                userData.setName(userCreated.getFullName());
                 userData.setRole(userCreated.getRole());
                 info.setUser(userData);
             }
             return ResponseEntity.ok().body(info);
-        }catch(Exception ex){
+        } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
 
     }
 
     @GetMapping("/auth/refresh")
-    @MessageApi("Renew token action")
     public ResponseEntity<ResLoginDTO> getRefreshToken(
-            @CookieValue(name = "refresh-token", defaultValue = "error") String refreshToken)
-            throws BadActionException {
+            @CookieValue(name = "refresh-token", defaultValue = "error") String refreshToken) throws Exception {
         if (refreshToken.equals("error")) {
-            throw new BadActionException("Refresh token not be attached in request");
+            throw new ResourceNotFoundException("Refresh token not be attached in request");
         }
         Jwt correctToken;
         try {
@@ -112,9 +117,14 @@ public class AuthController {
                     .body(null);
         }
         String email = correctToken.getSubject();
-        User currentUser = this.userService.fetchWithTokenAndEmail(refreshToken, email);
-        if (currentUser == null) {
-            throw new BadActionException("Invalid refresh token");
+
+        // Kiểm tra refresh token từ Redis trước
+        if (!this.RedisService.validateRefreshToken(email, refreshToken)) {
+            // Fallback kiểm tra từ database nếu Redis không có
+            User currentUser = this.userService.fetchWithTokenAndEmail(refreshToken, email);
+            if (currentUser == null) {
+                throw new Exception("Invalid refresh token");
+            }
         }
 
         ResLoginDTO resLoginDTO = new ResLoginDTO();
@@ -123,7 +133,7 @@ public class AuthController {
             ResLoginDTO.UserData userLog = new ResLoginDTO.UserData(
                     realUser.getId(),
                     realUser.getEmail(),
-                    realUser.getUsername(),
+                    realUser.getFullName(),
                     realUser.getRole());
             resLoginDTO.setUser(userLog);
         }
@@ -132,7 +142,9 @@ public class AuthController {
         resLoginDTO.setAccessToken(access_token);
         // gen refresh token
         String refresh_token = this.securityUtils.generateRefreshToken(email, resLoginDTO);
-        this.userService.saveRefreshToken(access_token, email);
+        // Lưu vào Redis và database
+        this.RedisService.saveRefreshToken(email, refresh_token, refreshTokenExpire);
+        this.userService.saveRefreshToken(refresh_token, email);
         // setup cookies
         ResponseCookie resCookies = ResponseCookie
                 .from("refresh-token", refresh_token)
@@ -146,13 +158,14 @@ public class AuthController {
     }
 
     @PostMapping("/auth/logout")
-    @MessageApi("sign out action")
-    public ResponseEntity<Void> LogoutAccount() throws BadActionException {
+    public ResponseEntity<Void> LogoutAccount() {
         String email = SecurityUtils.getCurrentUserLogin().isPresent() ? SecurityUtils.getCurrentUserLogin().get() : "";
-        if (email.equals("")) {
-            throw new BadActionException("Something wrong with access token");
+        if (email.isEmpty()) {
+            throw new InvalidDataException("Something wrong with access token");
         }
-        // set null value
+        // Xóa từ Redis
+        this.RedisService.deleteRefreshToken(email);
+        // Xóa từ database (fallback)
         this.userService.saveRefreshToken(null, email);
         ResponseCookie removeCookies = ResponseCookie
                 .from("refresh-token", null)
