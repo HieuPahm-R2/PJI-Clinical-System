@@ -1,10 +1,12 @@
 package com.vietnam.pji.model.medical;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.vietnam.pji.model.AbstractEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.io.Serializable;
 import java.util.Date;
 
 @Getter
@@ -14,11 +16,7 @@ import java.util.Date;
 @AllArgsConstructor
 @Entity
 @Table(name = "sensitivity_results")
-public class SensitivityResult {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class SensitivityResult extends AbstractEntity<Long> implements Serializable {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "culture_id")
@@ -34,8 +32,5 @@ public class SensitivityResult {
     @Column(name = "sensitivity_code", length = 10)
     private String sensitivityCode;
 
-    @CreationTimestamp
-    @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "created_at")
-    private Date createdAt;
+
 }

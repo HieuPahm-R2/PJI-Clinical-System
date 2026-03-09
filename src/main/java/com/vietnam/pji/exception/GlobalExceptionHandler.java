@@ -1,6 +1,8 @@
 package com.vietnam.pji.exception;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.support.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -160,6 +162,19 @@ public class GlobalExceptionHandler {
         errorResponse.setPath(req.getDescription(false).replace("uri=", ""));
         errorResponse.setStatus(INTERNAL_SERVER_ERROR.value());
         errorResponse.setError(INTERNAL_SERVER_ERROR.getReasonPhrase());
+        errorResponse.setMessage(e.getMessage());
+
+        return errorResponse;
+    }
+    @ExceptionHandler(value = {
+            ForbiddenException.class
+    })
+    public ErrorResponse handleForbiddenException(Exception e, WebRequest req) {
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setTimestamp(new Date());
+        errorResponse.setPath(req.getDescription(false).replace("uri=", ""));
+        errorResponse.setStatus(FORBIDDEN.value());
+        errorResponse.setError(FORBIDDEN.getReasonPhrase());
         errorResponse.setMessage(e.getMessage());
 
         return errorResponse;

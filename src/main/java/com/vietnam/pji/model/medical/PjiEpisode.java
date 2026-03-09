@@ -19,7 +19,7 @@ import java.util.Date;
 @AllArgsConstructor
 @Entity
 @Table(name = "pji_episodes")
-public class PjiEpisode extends AbstractEntity implements Serializable {
+public class PjiEpisode extends AbstractEntity<Long> implements Serializable {
 
 
     @ManyToOne(fetch = FetchType.LAZY)

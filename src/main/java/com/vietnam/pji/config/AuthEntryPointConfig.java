@@ -1,6 +1,7 @@
 package com.vietnam.pji.config;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.Optional;
 
 import com.vietnam.pji.exception.ErrorResponse;
@@ -32,6 +33,8 @@ public class AuthEntryPointConfig implements AuthenticationEntryPoint {
 
         ErrorResponse res = new ErrorResponse();
         res.setStatus(HttpStatus.UNAUTHORIZED.value());
+        res.setTimestamp(new Date());
+        res.setPath(request.getRequestURI());
         // handle error NULL value when not send anything
         String errorMess = Optional.ofNullable(authException.getCause())
                 .map(Throwable::getMessage)

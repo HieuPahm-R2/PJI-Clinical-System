@@ -14,6 +14,7 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -21,9 +22,11 @@ import lombok.Setter;
 @Entity
 @Getter
 @Setter
-@Table(name = "permissions")
+@Table(name = "permissions", uniqueConstraints = {
+        @UniqueConstraint(name = "permissions_api_path_method_key", columnNames = {"api_path", "method"})
+})
 @NoArgsConstructor
-public class Permission extends AbstractEntity implements Serializable {
+public class Permission extends AbstractEntity<Long> implements Serializable {
 
     @Column(name = "name")
     private String name;
@@ -50,17 +53,5 @@ public class Permission extends AbstractEntity implements Serializable {
     @JsonIgnore
     private List<Role> roles;
 
-    @PrePersist
-    public void handleBeforeCreate() {
-        this.createdBy = SecurityUtils.getCurrentUserLogin().isPresent() == true
-                ? SecurityUtils.getCurrentUserLogin().get()
-                : " ";
-    }
 
-    @PreUpdate
-    public void handleBeforeUpdate() {
-        this.updatedBy = SecurityUtils.getCurrentUserLogin().isPresent() == true
-                ? SecurityUtils.getCurrentUserLogin().get()
-                : " ";
-    }
 }

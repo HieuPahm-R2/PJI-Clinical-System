@@ -1,11 +1,11 @@
 spring:
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/pji_dev}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/pji_nodev}
     username: postgres
     password: 123456
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     show-sql: true
     properties:
       hibernate: format_sql:true
@@ -45,6 +45,18 @@ api:
     basename: i18n/messages
     encoding: UTF-8
     default-locale: en
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+openapi:
+  service:
+    api-docs: api-service
+    serverUrl: http://localhost:${server.port}
+    serverName: Server Dev
+    title: API Document
+    version: 1.0.0
 
 server:
   port: 8085

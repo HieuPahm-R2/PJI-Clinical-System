@@ -11,13 +11,6 @@ public interface UserMapper extends EntityMapper<UserRequestDTO, User> {
     @Override
     @BeanMapping(nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS)
     @Mapping(target = "role", ignore = true)
-    @Mapping(target = "avatar", ignore = true)
-    @Mapping(target = "refreshToken", ignore = true)
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "createdBy", ignore = true)
-    @Mapping(target = "updatedBy", ignore = true)
     User toEntity(UserRequestDTO dto);
 
     @Override
@@ -26,13 +19,6 @@ public interface UserMapper extends EntityMapper<UserRequestDTO, User> {
             nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
             nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS)
     @Mapping(target = "role", ignore = true)
-    @Mapping(target = "refreshToken", ignore = true)
-    @Mapping(target = "password", ignore = true)
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "createdBy", ignore = true)
-    @Mapping(target = "updatedBy", ignore = true)
     void update(UserRequestDTO dto, @MappingTarget User user);
 
     UserDetailResponse toUserDetailResponse(User user);

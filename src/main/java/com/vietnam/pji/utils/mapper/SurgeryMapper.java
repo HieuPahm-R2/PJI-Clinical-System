@@ -10,9 +10,6 @@ public interface SurgeryMapper extends EntityMapper<SurgeryRequestDTO, Surgery> 
     @Override
     @BeanMapping(nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS)
     @Mapping(target = "episode", ignore = true)
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
     Surgery toEntity(SurgeryRequestDTO dto);
 
     @Override
@@ -21,8 +18,5 @@ public interface SurgeryMapper extends EntityMapper<SurgeryRequestDTO, Surgery> 
             nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
             nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS)
     @Mapping(target = "episode", ignore = true)
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
     void update(SurgeryRequestDTO dto, @MappingTarget Surgery entity);
 }

@@ -16,8 +16,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -28,19 +28,19 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("${api.prefix}")
 public class AuthController {
 
-    @Value("${group29.jwt.refresh-token-validity-in-seconds}")
+    @Value("${secure.jwt.refresh-token-validity-in-seconds}")
     private long refreshTokenExpire;
 
     private final UserService userService;
     private final RedisService RedisService;
-    private final AuthenticationManagerBuilder authenticationManagerBuilder;
+    private final AuthenticationManager authenticationManager;
     private final SecurityUtils securityUtils;
 
     @PostMapping("/auth/login")
     public ResponseEntity<ResponseData<ResLoginDTO>> login(@Valid @RequestBody LoginDTO loginData) {
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                 loginData.getUsername(), loginData.getPassword());
-        Authentication authentication = authenticationManagerBuilder.getObject().authenticate(authenticationToken);
+        Authentication authentication = authenticationManager.authenticate(authenticationToken);
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         ResLoginDTO resLoginDTO = new ResLoginDTO();

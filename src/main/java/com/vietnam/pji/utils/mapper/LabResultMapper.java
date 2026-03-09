@@ -10,8 +10,6 @@ public interface LabResultMapper extends EntityMapper<LabResultRequestDTO, LabRe
     @Override
     @BeanMapping(nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS)
     @Mapping(target = "episode", ignore = true)
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
     LabResult toEntity(LabResultRequestDTO dto);
 
     @Override
@@ -20,7 +18,5 @@ public interface LabResultMapper extends EntityMapper<LabResultRequestDTO, LabRe
             nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
             nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS)
     @Mapping(target = "episode", ignore = true)
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
     void update(LabResultRequestDTO dto, @MappingTarget LabResult entity);
 }

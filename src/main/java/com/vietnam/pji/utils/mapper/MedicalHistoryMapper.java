@@ -10,11 +10,6 @@ public interface MedicalHistoryMapper extends EntityMapper<MedicalHistoryRequest
     @Override
     @BeanMapping(nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS)
     @Mapping(target = "episode", ignore = true)
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "createdBy", ignore = true)
-    @Mapping(target = "updatedBy", ignore = true)
     MedicalHistory toEntity(MedicalHistoryRequestDTO dto);
 
     @Override
@@ -23,10 +18,5 @@ public interface MedicalHistoryMapper extends EntityMapper<MedicalHistoryRequest
             nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
             nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS)
     @Mapping(target = "episode", ignore = true)
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "createdBy", ignore = true)
-    @Mapping(target = "updatedBy", ignore = true)
     void update(MedicalHistoryRequestDTO dto, @MappingTarget MedicalHistory entity);
 }

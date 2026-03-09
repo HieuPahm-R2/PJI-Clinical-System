@@ -1,12 +1,14 @@
 package com.vietnam.pji.model.medical;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.vietnam.pji.model.AbstractEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Date;
 
@@ -17,11 +19,7 @@ import java.util.Date;
 @AllArgsConstructor
 @Entity
 @Table(name = "lab_results")
-public class LabResult {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class LabResult extends AbstractEntity<Long> implements Serializable {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "episode_id")
@@ -89,8 +87,4 @@ public class LabResult {
     @Column(name = "biochemical_data", columnDefinition = "jsonb")
     private String biochemicalData;
 
-    @CreationTimestamp
-    @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "created_at")
-    private Date createdAt;
 }

@@ -1,4 +1,4 @@
-package com.vietnam.pji.copnfig;
+package com.vietnam.pji.config;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,35 +37,70 @@ public class DatabaseInitializer implements CommandLineRunner {
 
         if (countPermission == 0) {
             ArrayList<Permission> arrResult = new ArrayList<>();
-            arrResult.add(new Permission("Create a patient ", "/api/v1/add-patient", "POST", "PATIENTS"));
-            arrResult.add(new Permission("Update a patient", "/api/v1/update-patient", "PUT", "PATIENTS"));
-            arrResult.add(new Permission("Delete a patient ", "/api/v1/delete-patient/{id}", "DELETE", "PATIENTS"));
-            arrResult.add(new Permission("Get patient by id", "/api/v1/patient/{id}", "GET", "PATIENTS"));
-            arrResult.add(new Permission("Get patients with pagination", "/api/v1/patients", "GET", "PATIENTS"));
 
-            arrResult.add(new Permission("Create a permission", "/api/v1/add-permission", "POST", "PERMISSIONS"));
-            arrResult.add(new Permission("Update a permission", "/api/v1/update-permission", "PUT", "PERMISSIONS"));
-            arrResult.add(
-                    new Permission("Delete a permission", "/api/v1/delete-permission/{id}", "DELETE", "PERMISSIONS"));
-            arrResult.add(new Permission("Get a permission by id", "/api/v1/permission/{id}", "GET", "PERMISSIONS"));
-            arrResult
-                    .add(new Permission("Get permission with pagination", "/api/v1/permissions", "GET", "PERMISSIONS"));
+            // PATIENTS
+            arrResult.add(new Permission("Create a patient",                     "/api/v1/patients",        "POST",   "PATIENTS"));
+            arrResult.add(new Permission("Update a patient",                     "/api/v1/patients/{id}",   "PUT",    "PATIENTS"));
+            arrResult.add(new Permission("Delete a patient",                     "/api/v1/patients/{id}",   "DELETE", "PATIENTS"));
+            arrResult.add(new Permission("Get patient by id",                    "/api/v1/patients/{id}",   "GET",    "PATIENTS"));
+            arrResult.add(new Permission("Get patients with pagination",          "/api/v1/patients",        "GET",    "PATIENTS"));
 
-            arrResult.add(new Permission("Create a role", "/api/v1/add-role", "POST", "ROLES"));
-            arrResult.add(new Permission("Update a role", "/api/v1/update-role", "PUT", "ROLES"));
-            arrResult.add(new Permission("Delete a role", "/api/v1/delete-role/{id}", "DELETE", "ROLES"));
-            arrResult.add(new Permission("Get role by id", "/api/v1/role/{id}", "GET", "ROLES"));
-            arrResult.add(new Permission("Get roles with pagination", "/api/v1/roles", "GET", "ROLES"));
+            // EPISODES
+            arrResult.add(new Permission("Create an episode",                    "/api/v1/episodes",                      "POST",   "EPISODES"));
+            arrResult.add(new Permission("Update an episode",                    "/api/v1/episodes/{id}",                 "PUT",    "EPISODES"));
+            arrResult.add(new Permission("Delete an episode",                    "/api/v1/episodes/{id}",                 "DELETE", "EPISODES"));
+            arrResult.add(new Permission("Get episode by id",                    "/api/v1/episodes/{id}",                 "GET",    "EPISODES"));
+            arrResult.add(new Permission("Get episodes with pagination",          "/api/v1/episodes",                      "GET",    "EPISODES"));
+            arrResult.add(new Permission("Get episodes by patient",              "/api/v1/patients/{patientId}/episodes", "GET",    "EPISODES"));
 
-            arrResult.add(new Permission("Create a user", "/api/v1/add-user", "POST", "USERS"));
-            arrResult.add(new Permission("Update a user", "/api/v1/update-user", "PUT", "USERS"));
-            arrResult.add(new Permission("Delete a user", "/api/v1/delete-user/{id}", "DELETE", "USERS"));
-            arrResult.add(new Permission("Get a user by id", "/api/v1/user/{id}", "GET", "USERS"));
-            arrResult.add(new Permission("Get users with pagination", "/api/v1/users", "GET", "USERS"));
+            // MEDICAL_HISTORY
+            arrResult.add(new Permission("Create medical history",               "/api/v1/episodes/{episodeId}/medical-history", "POST",  "MEDICAL_HISTORY"));
+            arrResult.add(new Permission("Update medical history",               "/api/v1/episodes/{episodeId}/medical-history", "PUT",   "MEDICAL_HISTORY"));
+            arrResult.add(new Permission("Get medical history",                  "/api/v1/episodes/{episodeId}/medical-history", "GET",   "MEDICAL_HISTORY"));
 
-            arrResult.add(new Permission("Upload video", "/api/v1/upload/video", "POST", "EPISODES"));
+            // CLINICAL_RECORDS
+            arrResult.add(new Permission("Create clinical record",               "/api/v1/clinical-records",                              "POST",   "CLINICAL_RECORDS"));
+            arrResult.add(new Permission("Update clinical record",               "/api/v1/clinical-records/{id}",                         "PUT",    "CLINICAL_RECORDS"));
+            arrResult.add(new Permission("Delete clinical record",               "/api/v1/clinical-records/{id}",                         "DELETE", "CLINICAL_RECORDS"));
+            arrResult.add(new Permission("Get clinical record by id",            "/api/v1/clinical-records/{id}",                         "GET",    "CLINICAL_RECORDS"));
+            arrResult.add(new Permission("Get clinical records by episode",      "/api/v1/episodes/{episodeId}/clinical-records",          "GET",    "CLINICAL_RECORDS"));
+
+            // SURGERIES
+            arrResult.add(new Permission("Create surgery",                       "/api/v1/surgeries",                       "POST",   "SURGERIES"));
+            arrResult.add(new Permission("Update surgery",                       "/api/v1/surgeries/{id}",                  "PUT",    "SURGERIES"));
+            arrResult.add(new Permission("Delete surgery",                       "/api/v1/surgeries/{id}",                  "DELETE", "SURGERIES"));
+            arrResult.add(new Permission("Get surgery by id",                    "/api/v1/surgeries/{id}",                  "GET",    "SURGERIES"));
+            arrResult.add(new Permission("Get surgeries by episode",             "/api/v1/episodes/{episodeId}/surgeries",  "GET",    "SURGERIES"));
+
+            // LAB_RESULTS
+            arrResult.add(new Permission("Create lab result",                    "/api/v1/lab-results",                         "POST",   "LAB_RESULTS"));
+            arrResult.add(new Permission("Update lab result",                    "/api/v1/lab-results/{id}",                    "PUT",    "LAB_RESULTS"));
+            arrResult.add(new Permission("Delete lab result",                    "/api/v1/lab-results/{id}",                    "DELETE", "LAB_RESULTS"));
+            arrResult.add(new Permission("Get lab result by id",                 "/api/v1/lab-results/{id}",                    "GET",    "LAB_RESULTS"));
+            arrResult.add(new Permission("Get lab results by episode",           "/api/v1/episodes/{episodeId}/lab-results",    "GET",    "LAB_RESULTS"));
+
+            // IMAGE_RESULTS
+            arrResult.add(new Permission("Create image result",                  "/api/v1/image-results",                       "POST",   "IMAGE_RESULTS"));
+            arrResult.add(new Permission("Update image result",                  "/api/v1/image-results/{id}",                  "PUT",    "IMAGE_RESULTS"));
+            arrResult.add(new Permission("Delete image result",                  "/api/v1/image-results/{id}",                  "DELETE", "IMAGE_RESULTS"));
+            arrResult.add(new Permission("Get image result by id",               "/api/v1/image-results/{id}",                  "GET",    "IMAGE_RESULTS"));
+            arrResult.add(new Permission("Get image results by episode",         "/api/v1/episodes/{episodeId}/image-results",  "GET",    "IMAGE_RESULTS"));
+
+            // CULTURE_RESULTS
+            arrResult.add(new Permission("Create culture result",                "/api/v1/culture-results",                       "POST",   "CULTURE_RESULTS"));
+            arrResult.add(new Permission("Update culture result",                "/api/v1/culture-results/{id}",                  "PUT",    "CULTURE_RESULTS"));
+            arrResult.add(new Permission("Delete culture result",                "/api/v1/culture-results/{id}",                  "DELETE", "CULTURE_RESULTS"));
+            arrResult.add(new Permission("Get culture result by id",             "/api/v1/culture-results/{id}",                  "GET",    "CULTURE_RESULTS"));
+            arrResult.add(new Permission("Get culture results by episode",       "/api/v1/episodes/{episodeId}/culture-results",  "GET",    "CULTURE_RESULTS"));
+
+            // SENSITIVITY_RESULTS
+            arrResult.add(new Permission("Create sensitivity result",            "/api/v1/sensitivity-results",                                  "POST",   "SENSITIVITY_RESULTS"));
+            arrResult.add(new Permission("Update sensitivity result",            "/api/v1/sensitivity-results/{id}",                             "PUT",    "SENSITIVITY_RESULTS"));
+            arrResult.add(new Permission("Delete sensitivity result",            "/api/v1/sensitivity-results/{id}",                             "DELETE", "SENSITIVITY_RESULTS"));
+            arrResult.add(new Permission("Get sensitivity result by id",         "/api/v1/sensitivity-results/{id}",                             "GET",    "SENSITIVITY_RESULTS"));
+            arrResult.add(new Permission("Get sensitivity results by culture",   "/api/v1/culture-results/{cultureId}/sensitivity-results",      "GET",    "SENSITIVITY_RESULTS"));
+
             arrResult.add(new Permission("Upload file", "/api/v1/files", "POST", "FILES"));
-
 
             this.permissionRepository.saveAll(arrResult);
         }

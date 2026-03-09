@@ -1,10 +1,12 @@
 package com.vietnam.pji.model.medical;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.vietnam.pji.model.AbstractEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.io.Serializable;
 import java.util.Date;
 
 @Getter
@@ -14,11 +16,7 @@ import java.util.Date;
 @AllArgsConstructor
 @Entity
 @Table(name = "culture_results")
-public class CultureResult {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class CultureResult extends AbstractEntity<Long> implements Serializable {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "episode_id")
@@ -43,8 +41,4 @@ public class CultureResult {
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
 
-    @CreationTimestamp
-    @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "created_at")
-    private Date createdAt;
 }

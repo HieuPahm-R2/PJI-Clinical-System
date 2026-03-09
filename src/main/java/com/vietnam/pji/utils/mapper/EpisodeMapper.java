@@ -10,11 +10,6 @@ public interface EpisodeMapper extends EntityMapper<EpisodeRequestDTO, PjiEpisod
     @Override
     @BeanMapping(nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS)
     @Mapping(target = "patient", ignore = true)
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "createdBy", ignore = true)
-    @Mapping(target = "updatedBy", ignore = true)
     PjiEpisode toEntity(EpisodeRequestDTO dto);
 
     @Override
@@ -23,10 +18,5 @@ public interface EpisodeMapper extends EntityMapper<EpisodeRequestDTO, PjiEpisod
             nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
             nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS)
     @Mapping(target = "patient", ignore = true)
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "createdBy", ignore = true)
-    @Mapping(target = "updatedBy", ignore = true)
     void update(EpisodeRequestDTO dto, @MappingTarget PjiEpisode entity);
 }

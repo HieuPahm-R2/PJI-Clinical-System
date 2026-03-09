@@ -19,7 +19,7 @@ import com.nimbusds.jose.util.Base64;
 
 @Configuration
 public class JwtConfiguration {
-    @Value("${group29.jwt.base64-secret}")
+    @Value("${secure.jwt.base64-secret}")
     private String jwtKey;
 
     @Bean

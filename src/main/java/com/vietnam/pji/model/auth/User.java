@@ -25,12 +25,8 @@ import lombok.Setter;
 @Table(name = "users")
 public class User extends AbstractEntity<Long> implements Serializable {
 
-    @Column(name = "full_name")
+    @Column(name = "fullname")
     private String fullName;
-
-    @Column(name = "date_of_birth")
-    @Temporal(TemporalType.DATE)
-    private Date dateOfBirth;
 
     @Column(name = "phone")
     private String phone;

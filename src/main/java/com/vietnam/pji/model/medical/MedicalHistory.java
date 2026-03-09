@@ -14,8 +14,7 @@ import java.io.Serializable;
 @AllArgsConstructor
 @Entity
 @Table(name = "medical_histories")
-public class MedicalHistory extends AbstractEntity implements Serializable {
-
+public class MedicalHistory extends AbstractEntity<Long> implements Serializable {
 
     @JsonIgnore
     @OneToOne(fetch = FetchType.LAZY)

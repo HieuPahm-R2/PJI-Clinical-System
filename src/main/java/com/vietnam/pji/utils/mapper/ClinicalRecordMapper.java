@@ -10,8 +10,6 @@ public interface ClinicalRecordMapper extends EntityMapper<ClinicalRecordRequest
     @Override
     @BeanMapping(nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS)
     @Mapping(target = "episode", ignore = true)
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
     ClinicalRecord toEntity(ClinicalRecordRequestDTO dto);
 
     @Override
@@ -20,7 +18,5 @@ public interface ClinicalRecordMapper extends EntityMapper<ClinicalRecordRequest
             nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
             nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS)
     @Mapping(target = "episode", ignore = true)
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
     void update(ClinicalRecordRequestDTO dto, @MappingTarget ClinicalRecord entity);
 }

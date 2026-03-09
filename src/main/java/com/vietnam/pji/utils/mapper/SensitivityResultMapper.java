@@ -10,8 +10,6 @@ public interface SensitivityResultMapper extends EntityMapper<SensitivityResultR
     @Override
     @BeanMapping(nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS)
     @Mapping(target = "culture", ignore = true)
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
     SensitivityResult toEntity(SensitivityResultRequestDTO dto);
 
     @Override
@@ -20,7 +18,5 @@ public interface SensitivityResultMapper extends EntityMapper<SensitivityResultR
             nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
             nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS)
     @Mapping(target = "culture", ignore = true)
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
     void update(SensitivityResultRequestDTO dto, @MappingTarget SensitivityResult entity);
 }
