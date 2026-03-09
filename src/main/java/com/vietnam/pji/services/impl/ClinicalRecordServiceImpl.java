@@ -8,6 +8,7 @@ import com.vietnam.pji.model.medical.PjiEpisode;
 import com.vietnam.pji.repository.ClinicalRecordRepository;
 import com.vietnam.pji.repository.EpisodeRepository;
 import com.vietnam.pji.services.ClinicalRecordService;
+import com.vietnam.pji.utils.mapper.ClinicalRecordMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,12 +20,13 @@ public class ClinicalRecordServiceImpl implements ClinicalRecordService {
 
     private final ClinicalRecordRepository clinicalRecordRepository;
     private final EpisodeRepository episodeRepository;
+    private final ClinicalRecordMapper clinicalRecordMapper;
 
     @Override
     public ClinicalRecord create(ClinicalRecordRequestDTO data) {
         PjiEpisode episode = episodeRepository.findById(data.getEpisodeId())
                 .orElseThrow(() -> new ResourceNotFoundException("Episode not found"));
-        ClinicalRecord record = buildFromDto(data, new ClinicalRecord());
+        ClinicalRecord record = clinicalRecordMapper.toEntity(data);
         record.setEpisode(episode);
         return clinicalRecordRepository.save(record);
     }
@@ -33,7 +35,7 @@ public class ClinicalRecordServiceImpl implements ClinicalRecordService {
     public ClinicalRecord update(Long id, ClinicalRecordRequestDTO data) {
         ClinicalRecord record = clinicalRecordRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Clinical record not found"));
-        buildFromDto(data, record);
+        clinicalRecordMapper.update(data, record);
         return clinicalRecordRepository.save(record);
     }
 
@@ -67,17 +69,5 @@ public class ClinicalRecordServiceImpl implements ClinicalRecordService {
         result.setMeta(meta);
         result.setResult(page.getContent());
         return result;
-    }
-
-    private ClinicalRecord buildFromDto(ClinicalRecordRequestDTO data, ClinicalRecord record) {
-        record.setOnIllness(data.getOnIllness());
-        record.setTemperature(data.getTemperature());
-        record.setBloodPressure(data.getBloodPressure());
-        record.setHeartRate(data.getHeartRate());
-        record.setRespiratoryRate(data.getRespiratoryRate());
-        record.setBmi(data.getBmi());
-        record.setLocalSymptoms(data.getLocalSymptoms());
-        record.setNotations(data.getNotations());
-        return record;
     }
 }

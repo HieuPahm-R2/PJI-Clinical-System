@@ -1,6 +1,7 @@
 package com.vietnam.pji.model.medical;
 
 import com.vietnam.pji.constant.GenderEnum;
+import com.vietnam.pji.model.AbstractEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -8,6 +9,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.Date;
 
@@ -18,11 +20,7 @@ import java.util.Date;
 @AllArgsConstructor
 @Entity
 @Table(name = "patients")
-public class Patient {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Patient extends AbstractEntity implements Serializable {
 
     @Column(name = "full_name", nullable = false, length = 100)
     private String fullName;
@@ -65,13 +63,5 @@ public class Patient {
     @Column(name = "relative_info", columnDefinition = "jsonb")
     private String relativeInfo;
 
-    @CreationTimestamp
-    @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "created_at")
-    private Date createdAt;
 
-    @UpdateTimestamp
-    @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "updated_at")
-    private Date updatedAt;
 }

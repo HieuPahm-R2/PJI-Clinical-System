@@ -23,7 +23,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Entity
 @Table(name = "users")
-public class User extends AbstractEntity implements Serializable {
+public class User extends AbstractEntity<Long> implements Serializable {
 
     @Column(name = "full_name")
     private String fullName;

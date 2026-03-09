@@ -1,39 +1,32 @@
 package com.vietnam.pji.utils.mapper;
 
-import com.vietnam.pji.dto.request.UserRequestDTO;
-import com.vietnam.pji.dto.response.UserDetailResponse;
-import com.vietnam.pji.model.auth.User;
+import com.vietnam.pji.dto.request.MedicalHistoryRequestDTO;
+import com.vietnam.pji.model.medical.MedicalHistory;
 import org.mapstruct.*;
 
 @Mapper(config = DefaultConfigMapper.class)
-public interface UserMapper extends EntityMapper<UserRequestDTO, User> {
+public interface MedicalHistoryMapper extends EntityMapper<MedicalHistoryRequestDTO, MedicalHistory> {
 
     @Override
     @BeanMapping(nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS)
-    @Mapping(target = "role", ignore = true)
-    @Mapping(target = "avatar", ignore = true)
-    @Mapping(target = "refreshToken", ignore = true)
+    @Mapping(target = "episode", ignore = true)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
-    User toEntity(UserRequestDTO dto);
+    MedicalHistory toEntity(MedicalHistoryRequestDTO dto);
 
     @Override
     @Named("update")
     @BeanMapping(
             nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
             nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS)
-    @Mapping(target = "role", ignore = true)
-    @Mapping(target = "refreshToken", ignore = true)
-    @Mapping(target = "password", ignore = true)
+    @Mapping(target = "episode", ignore = true)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
-    void update(UserRequestDTO dto, @MappingTarget User user);
-
-    UserDetailResponse toUserDetailResponse(User user);
+    void update(MedicalHistoryRequestDTO dto, @MappingTarget MedicalHistory entity);
 }

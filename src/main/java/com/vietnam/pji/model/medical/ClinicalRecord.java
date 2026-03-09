@@ -7,6 +7,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Date;
@@ -18,7 +19,7 @@ import java.util.Date;
 @AllArgsConstructor
 @Entity
 @Table(name = "clinical_records")
-public class ClinicalRecord {
+public class ClinicalRecord implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

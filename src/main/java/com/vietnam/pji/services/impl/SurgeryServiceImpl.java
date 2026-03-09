@@ -8,6 +8,7 @@ import com.vietnam.pji.model.medical.Surgery;
 import com.vietnam.pji.repository.EpisodeRepository;
 import com.vietnam.pji.repository.SurgeryRepository;
 import com.vietnam.pji.services.SurgeryService;
+import com.vietnam.pji.utils.mapper.SurgeryMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,12 +20,13 @@ public class SurgeryServiceImpl implements SurgeryService {
 
     private final SurgeryRepository surgeryRepository;
     private final EpisodeRepository episodeRepository;
+    private final SurgeryMapper surgeryMapper;
 
     @Override
     public Surgery create(SurgeryRequestDTO data) {
         PjiEpisode episode = episodeRepository.findById(data.getEpisodeId())
                 .orElseThrow(() -> new ResourceNotFoundException("Episode not found"));
-        Surgery surgery = buildFromDto(data, new Surgery());
+        Surgery surgery = surgeryMapper.toEntity(data);
         surgery.setEpisode(episode);
         return surgeryRepository.save(surgery);
     }
@@ -33,7 +35,7 @@ public class SurgeryServiceImpl implements SurgeryService {
     public Surgery update(Long id, SurgeryRequestDTO data) {
         Surgery surgery = surgeryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Surgery not found"));
-        buildFromDto(data, surgery);
+        surgeryMapper.update(data, surgery);
         return surgeryRepository.save(surgery);
     }
 
@@ -67,13 +69,5 @@ public class SurgeryServiceImpl implements SurgeryService {
         result.setMeta(meta);
         result.setResult(page.getContent());
         return result;
-    }
-
-    private Surgery buildFromDto(SurgeryRequestDTO data, Surgery surgery) {
-        surgery.setSurgeryDate(data.getSurgeryDate());
-        surgery.setSurgeryType(data.getSurgeryType());
-        surgery.setWoundStatus(data.getWoundStatus());
-        surgery.setFindings(data.getFindings());
-        return surgery;
     }
 }

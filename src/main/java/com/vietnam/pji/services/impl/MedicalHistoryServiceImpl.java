@@ -8,6 +8,7 @@ import com.vietnam.pji.model.medical.PjiEpisode;
 import com.vietnam.pji.repository.EpisodeRepository;
 import com.vietnam.pji.repository.MedicalHistoryRepository;
 import com.vietnam.pji.services.MedicalHistoryService;
+import com.vietnam.pji.utils.mapper.MedicalHistoryMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +18,7 @@ public class MedicalHistoryServiceImpl implements MedicalHistoryService {
 
     private final MedicalHistoryRepository medicalHistoryRepository;
     private final EpisodeRepository episodeRepository;
+    private final MedicalHistoryMapper medicalHistoryMapper;
 
     @Override
     public MedicalHistory create(Long episodeId, MedicalHistoryRequestDTO data) {
@@ -26,7 +28,7 @@ public class MedicalHistoryServiceImpl implements MedicalHistoryService {
         PjiEpisode episode = episodeRepository.findById(episodeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Episode not found"));
 
-        MedicalHistory history = buildFromDto(data, new MedicalHistory());
+        MedicalHistory history = medicalHistoryMapper.toEntity(data);
         history.setEpisode(episode);
         return medicalHistoryRepository.save(history);
     }
@@ -35,7 +37,7 @@ public class MedicalHistoryServiceImpl implements MedicalHistoryService {
     public MedicalHistory update(Long episodeId, MedicalHistoryRequestDTO data) {
         MedicalHistory history = medicalHistoryRepository.findByEpisodeId(episodeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Medical history not found for this episode"));
-        buildFromDto(data, history);
+        medicalHistoryMapper.update(data, history);
         return medicalHistoryRepository.save(history);
     }
 
@@ -43,21 +45,5 @@ public class MedicalHistoryServiceImpl implements MedicalHistoryService {
     public MedicalHistory getByEpisodeId(Long episodeId) {
         return medicalHistoryRepository.findByEpisodeId(episodeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Medical history not found for this episode"));
-    }
-
-    private MedicalHistory buildFromDto(MedicalHistoryRequestDTO data, MedicalHistory history) {
-        history.setMedicalHistory(data.getMedicalHistory());
-        history.setProcess(data.getProcess());
-        history.setIsAllergy(data.getIsAllergy());
-        history.setAllergyNote(data.getAllergyNote());
-        history.setIsDrug(data.getIsDrug());
-        history.setDrugNote(data.getDrugNote());
-        history.setIsAlcohol(data.getIsAlcohol());
-        history.setAlcoholNote(data.getAlcoholNote());
-        history.setIsSmoking(data.getIsSmoking());
-        history.setSmokingNote(data.getSmokingNote());
-        history.setIsOther(data.getIsOther());
-        history.setOtherNote(data.getOtherNote());
-        return history;
     }
 }

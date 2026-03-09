@@ -8,6 +8,7 @@ import com.vietnam.pji.model.medical.PjiEpisode;
 import com.vietnam.pji.repository.EpisodeRepository;
 import com.vietnam.pji.repository.ImageResultRepository;
 import com.vietnam.pji.services.ImageResultService;
+import com.vietnam.pji.utils.mapper.ImageResultMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,12 +20,13 @@ public class ImageResultServiceImpl implements ImageResultService {
 
     private final ImageResultRepository imageResultRepository;
     private final EpisodeRepository episodeRepository;
+    private final ImageResultMapper imageResultMapper;
 
     @Override
     public ImageResult create(ImageResultRequestDTO data) {
         PjiEpisode episode = episodeRepository.findById(data.getEpisodeId())
                 .orElseThrow(() -> new ResourceNotFoundException("Episode not found"));
-        ImageResult imageResult = buildFromDto(data, new ImageResult());
+        ImageResult imageResult = imageResultMapper.toEntity(data);
         imageResult.setEpisode(episode);
         return imageResultRepository.save(imageResult);
     }
@@ -33,7 +35,7 @@ public class ImageResultServiceImpl implements ImageResultService {
     public ImageResult update(Long id, ImageResultRequestDTO data) {
         ImageResult imageResult = imageResultRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Image result not found"));
-        buildFromDto(data, imageResult);
+        imageResultMapper.update(data, imageResult);
         return imageResultRepository.save(imageResult);
     }
 
@@ -67,13 +69,5 @@ public class ImageResultServiceImpl implements ImageResultService {
         result.setMeta(meta);
         result.setResult(page.getContent());
         return result;
-    }
-
-    private ImageResult buildFromDto(ImageResultRequestDTO data, ImageResult imageResult) {
-        imageResult.setType(data.getType());
-        imageResult.setImagingDate(data.getImagingDate());
-        imageResult.setFindings(data.getFindings());
-        imageResult.setFileMetadata(data.getFileMetadata());
-        return imageResult;
     }
 }

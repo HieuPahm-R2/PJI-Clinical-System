@@ -35,9 +35,9 @@ public class UserServiceImpl implements UserService {
         if (userRepository.existsByEmail(data.getEmail())) {
             throw new InvalidDataException("User with this email already exists.");
         }
-        User user = userMapper.toUser(data);
-        if (data.getRoleId() != null) {
-            Role role = roleRepository.findById(data.getRoleId()).orElse(null);
+        User user = userMapper.toEntity(data);
+        if (data.getRole().getId() != null) {
+            Role role = roleRepository.findById(data.getRole().getId()).orElse(null);
             user.setRole(role);
         }
         user.setPassword(passwordEncoder.encode(data.getPassword()));
@@ -48,9 +48,9 @@ public class UserServiceImpl implements UserService {
     public UserDetailResponse update(UserRequestDTO data) {
         User user = userRepository.findById(data.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        userMapper.updateUserFromDto(data, user);
-        if (data.getRoleId() != null) {
-            Role role = roleRepository.findById(data.getRoleId()).orElse(null);
+        userMapper.update(data, user);
+        if (data.getRole().getId() != null) {
+            Role role = roleRepository.findById(data.getRole().getId()).orElse(null);
             user.setRole(role);
         }
         return userMapper.toUserDetailResponse(userRepository.save(user));

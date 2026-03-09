@@ -8,6 +8,7 @@ import com.vietnam.pji.model.medical.PjiEpisode;
 import com.vietnam.pji.repository.CultureResultRepository;
 import com.vietnam.pji.repository.EpisodeRepository;
 import com.vietnam.pji.services.CultureResultService;
+import com.vietnam.pji.utils.mapper.CultureResultMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,12 +20,13 @@ public class CultureResultServiceImpl implements CultureResultService {
 
     private final CultureResultRepository cultureResultRepository;
     private final EpisodeRepository episodeRepository;
+    private final CultureResultMapper cultureResultMapper;
 
     @Override
     public CultureResult create(CultureResultRequestDTO data) {
         PjiEpisode episode = episodeRepository.findById(data.getEpisodeId())
                 .orElseThrow(() -> new ResourceNotFoundException("Episode not found"));
-        CultureResult cultureResult = buildFromDto(data, new CultureResult());
+        CultureResult cultureResult = cultureResultMapper.toEntity(data);
         cultureResult.setEpisode(episode);
         return cultureResultRepository.save(cultureResult);
     }
@@ -33,7 +35,7 @@ public class CultureResultServiceImpl implements CultureResultService {
     public CultureResult update(Long id, CultureResultRequestDTO data) {
         CultureResult cultureResult = cultureResultRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Culture result not found"));
-        buildFromDto(data, cultureResult);
+        cultureResultMapper.update(data, cultureResult);
         return cultureResultRepository.save(cultureResult);
     }
 
@@ -67,15 +69,5 @@ public class CultureResultServiceImpl implements CultureResultService {
         result.setMeta(meta);
         result.setResult(page.getContent());
         return result;
-    }
-
-    private CultureResult buildFromDto(CultureResultRequestDTO data, CultureResult cultureResult) {
-        cultureResult.setSampleType(data.getSampleType());
-        cultureResult.setIncubationDays(data.getIncubationDays());
-        cultureResult.setOrganismName(data.getOrganismName());
-        cultureResult.setResult(data.getResult());
-        cultureResult.setGramType(data.getGramType());
-        cultureResult.setNotes(data.getNotes());
-        return cultureResult;
     }
 }

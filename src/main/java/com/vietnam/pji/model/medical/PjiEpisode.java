@@ -1,12 +1,14 @@
 package com.vietnam.pji.model.medical;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.vietnam.pji.model.AbstractEntity;
 import com.vietnam.pji.model.auth.User;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.Date;
 
@@ -17,11 +19,8 @@ import java.util.Date;
 @AllArgsConstructor
 @Entity
 @Table(name = "pji_episodes")
-public class PjiEpisode {
+public class PjiEpisode extends AbstractEntity implements Serializable {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "patient_id")
@@ -55,18 +54,5 @@ public class PjiEpisode {
     @Column(name = "result", length = 30)
     private String result;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "password", "refreshToken", "role"})
-    private User createdBy;
 
-    @CreationTimestamp
-    @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "created_at")
-    private Date createdAt;
-
-    @UpdateTimestamp
-    @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "updated_at")
-    private Date updatedAt;
 }

@@ -1,39 +1,30 @@
 package com.vietnam.pji.utils.mapper;
 
-import com.vietnam.pji.dto.request.UserRequestDTO;
-import com.vietnam.pji.dto.response.UserDetailResponse;
-import com.vietnam.pji.model.auth.User;
+import com.vietnam.pji.dto.request.PatientRequestDTO;
+import com.vietnam.pji.model.medical.Patient;
 import org.mapstruct.*;
 
 @Mapper(config = DefaultConfigMapper.class)
-public interface UserMapper extends EntityMapper<UserRequestDTO, User> {
+public interface PatientMapper extends EntityMapper<PatientRequestDTO, Patient> {
 
     @Override
     @BeanMapping(nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS)
-    @Mapping(target = "role", ignore = true)
-    @Mapping(target = "avatar", ignore = true)
-    @Mapping(target = "refreshToken", ignore = true)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
-    User toEntity(UserRequestDTO dto);
+    Patient toEntity(PatientRequestDTO dto);
 
     @Override
     @Named("update")
     @BeanMapping(
             nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
             nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS)
-    @Mapping(target = "role", ignore = true)
-    @Mapping(target = "refreshToken", ignore = true)
-    @Mapping(target = "password", ignore = true)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
-    void update(UserRequestDTO dto, @MappingTarget User user);
-
-    UserDetailResponse toUserDetailResponse(User user);
+    void update(PatientRequestDTO dto, @MappingTarget Patient entity);
 }

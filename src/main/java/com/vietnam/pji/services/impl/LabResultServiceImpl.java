@@ -8,6 +8,7 @@ import com.vietnam.pji.model.medical.PjiEpisode;
 import com.vietnam.pji.repository.EpisodeRepository;
 import com.vietnam.pji.repository.LabResultRepository;
 import com.vietnam.pji.services.LabResultService;
+import com.vietnam.pji.utils.mapper.LabResultMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,12 +20,13 @@ public class LabResultServiceImpl implements LabResultService {
 
     private final LabResultRepository labResultRepository;
     private final EpisodeRepository episodeRepository;
+    private final LabResultMapper labResultMapper;
 
     @Override
     public LabResult create(LabResultRequestDTO data) {
         PjiEpisode episode = episodeRepository.findById(data.getEpisodeId())
                 .orElseThrow(() -> new ResourceNotFoundException("Episode not found"));
-        LabResult labResult = buildFromDto(data, new LabResult());
+        LabResult labResult = labResultMapper.toEntity(data);
         labResult.setEpisode(episode);
         return labResultRepository.save(labResult);
     }
@@ -33,7 +35,7 @@ public class LabResultServiceImpl implements LabResultService {
     public LabResult update(Long id, LabResultRequestDTO data) {
         LabResult labResult = labResultRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Lab result not found"));
-        buildFromDto(data, labResult);
+        labResultMapper.update(data, labResult);
         return labResultRepository.save(labResult);
     }
 
@@ -67,28 +69,5 @@ public class LabResultServiceImpl implements LabResultService {
         result.setMeta(meta);
         result.setResult(page.getContent());
         return result;
-    }
-
-    private LabResult buildFromDto(LabResultRequestDTO data, LabResult labResult) {
-        labResult.setEsr(data.getEsr());
-        labResult.setWbcBlood(data.getWbcBlood());
-        labResult.setNeut(data.getNeut());
-        labResult.setMono(data.getMono());
-        labResult.setLymph(data.getLymph());
-        labResult.setEos(data.getEos());
-        labResult.setBaso(data.getBaso());
-        labResult.setRbc(data.getRbc());
-        labResult.setHgb(data.getHgb());
-        labResult.setHct(data.getHct());
-        labResult.setRdw(data.getRdw());
-        labResult.setIg(data.getIg());
-        labResult.setMcv(data.getMcv());
-        labResult.setMch(data.getMch());
-        labResult.setMchc(data.getMchc());
-        labResult.setCrp(data.getCrp());
-        labResult.setSynovialWbc(data.getSynovialWbc());
-        labResult.setSynovialPmn(data.getSynovialPmn());
-        labResult.setBiochemicalData(data.getBiochemicalData());
-        return labResult;
     }
 }

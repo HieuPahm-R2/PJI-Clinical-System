@@ -1,5 +1,6 @@
 package com.vietnam.pji.model;
 
+import java.io.Serializable;
 import java.util.Date;
 
 import com.vietnam.pji.utils.SecurityUtils;
@@ -12,7 +13,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 @Getter
 @Setter
 @MappedSuperclass
-public class AbstractEntity {
+public abstract class AbstractEntity<T extends Serializable> implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
@@ -31,7 +32,7 @@ public class AbstractEntity {
     @Column(name = "created_by")
     private String createdBy;
 
-    @Column(name = "created_by")
+    @Column(name = "updated_by")
     private String updatedBy;
 
     @PrePersist

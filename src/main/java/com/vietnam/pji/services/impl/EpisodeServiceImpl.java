@@ -3,14 +3,12 @@ package com.vietnam.pji.services.impl;
 import com.vietnam.pji.dto.request.EpisodeRequestDTO;
 import com.vietnam.pji.dto.response.PaginationResultDTO;
 import com.vietnam.pji.exception.ResourceNotFoundException;
-import com.vietnam.pji.model.auth.User;
 import com.vietnam.pji.model.medical.Patient;
 import com.vietnam.pji.model.medical.PjiEpisode;
 import com.vietnam.pji.repository.EpisodeRepository;
 import com.vietnam.pji.repository.PatientRepository;
-import com.vietnam.pji.repository.UserRepository;
 import com.vietnam.pji.services.EpisodeService;
-import com.vietnam.pji.utils.SecurityUtils;
+import com.vietnam.pji.utils.mapper.EpisodeMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,21 +21,15 @@ public class EpisodeServiceImpl implements EpisodeService {
 
     private final EpisodeRepository episodeRepository;
     private final PatientRepository patientRepository;
-    private final UserRepository userRepository;
+    private final EpisodeMapper episodeMapper;
 
     @Override
     public PjiEpisode create(EpisodeRequestDTO data) {
         Patient patient = patientRepository.findById(data.getPatientId())
                 .orElseThrow(() -> new ResourceNotFoundException("Patient not found"));
 
-        PjiEpisode episode = buildFromDto(data, new PjiEpisode());
+        PjiEpisode episode = episodeMapper.toEntity(data);
         episode.setPatient(patient);
-
-        // Assign creator from current authenticated user
-        SecurityUtils.getCurrentUserLogin().ifPresent(email -> {
-            User user = userRepository.findByEmail(email);
-            episode.setCreatedBy(user);
-        });
 
         return episodeRepository.save(episode);
     }
@@ -53,7 +45,7 @@ public class EpisodeServiceImpl implements EpisodeService {
             episode.setPatient(patient);
         }
 
-        buildFromDto(data, episode);
+        episodeMapper.update(data, episode);
         return episodeRepository.save(episode);
     }
 
@@ -84,19 +76,6 @@ public class EpisodeServiceImpl implements EpisodeService {
         }
         Page<PjiEpisode> page = episodeRepository.findByPatientId(patientId, pageable);
         return buildPaginationResult(page);
-    }
-
-    private PjiEpisode buildFromDto(EpisodeRequestDTO data, PjiEpisode episode) {
-        episode.setAdmissionDate(data.getAdmissionDate());
-        episode.setDischargeDate(data.getDischargeDate());
-        episode.setTreatmentDays(data.getTreatmentDays());
-        episode.setReason(data.getReason());
-        episode.setDepartment(data.getDepartment());
-        episode.setDirect(data.getDirect());
-        episode.setDaysTreatment(data.getDaysTreatment());
-        episode.setReferralSource(data.getReferralSource());
-        episode.setResult(data.getResult());
-        return episode;
     }
 
     private PaginationResultDTO buildPaginationResult(Page<PjiEpisode> page) {

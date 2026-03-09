@@ -1,8 +1,11 @@
 package com.vietnam.pji.model.medical;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.vietnam.pji.model.AbstractEntity;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.io.Serializable;
 
 @Getter
 @Setter
@@ -11,11 +14,8 @@ import lombok.*;
 @AllArgsConstructor
 @Entity
 @Table(name = "medical_histories")
-public class MedicalHistory {
+public class MedicalHistory extends AbstractEntity implements Serializable {
 
-    @Id
-    @Column(name = "episode_id")
-    private Long episodeId;
 
     @JsonIgnore
     @OneToOne(fetch = FetchType.LAZY)
