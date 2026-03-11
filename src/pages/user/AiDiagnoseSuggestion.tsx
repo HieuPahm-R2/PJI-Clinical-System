@@ -4,10 +4,10 @@ import { Step1PatientSelection } from '../../components/user/diagnose_steps/S1Pa
 import { PatientIntake } from '../../components/user/diagnose_steps/S1PatientIntake';
 import { MedicalHistoryPage } from '../../components/user/diagnose_steps/MedicalHistory';
 import { ClinicalAssessmentPage } from '../../components/user/diagnose_steps/ClinicalAssessment';
-import { Step4Antibiogram } from '../../components/user/diagnose_steps/Step4Antibiogram';
+import { Step4Antibiogram } from '../../components/user/diagnose_steps/S4Antibiogram';
 import { Step5TreatmentPlan } from '../../components/user/diagnose_steps/S5TreatmentPlan';
 import { HomeOutlined } from '@ant-design/icons';
-import MedicalExamination from '@/components/user/diagnose_steps/MedicalExamination';
+import MedicalExamination from '@/components/user/diagnose_steps/S2MedicalExamination';
 
 const AiDiagnosisSuggestion = () => {
     const [currentStep, setCurrentStep] = useState(() => {
