@@ -28,6 +28,9 @@ public class MedicalHistory extends AbstractEntity<Long> implements Serializable
     @Column(name = "process", columnDefinition = "TEXT")
     private String process;
 
+    @Column(name = "antibiotic_history", columnDefinition = "TEXT")
+    private String antibioticHistory;
+
     @Column(name = "is_allergy")
     private Boolean isAllergy;
 

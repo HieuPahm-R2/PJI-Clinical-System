@@ -31,8 +31,6 @@ public class Surgery extends AbstractEntity<Long> implements Serializable {
     @Column(name = "surgery_type", nullable = false, length = 255)
     private String surgeryType;
 
-    @Column(name = "wound_status", length = 50)
-    private String woundStatus;
 
     @Column(name = "findings", columnDefinition = "TEXT")
     private String findings;

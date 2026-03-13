@@ -30,30 +30,41 @@ public class ClinicalRecord extends AbstractEntity<Long> implements Serializable
     @Column(name = "on_illness")
     private LocalDate onIllness;
 
-    @Column(name = "temperature", precision = 4, scale = 1)
-    private BigDecimal temperature;
-
     @Column(name = "blood_pressure", length = 20)
     private String bloodPressure;
-
-    @Column(name = "heart_rate")
-    private Integer heartRate;
-
-    @Column(name = "respiratory_rate")
-    private Integer respiratoryRate;
 
     @Column(name = "bmi", precision = 4, scale = 2)
     private BigDecimal bmi;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "local_symptoms", columnDefinition = "jsonb")
-    private String localSymptoms;
+    private Boolean fever;
+
+    private Boolean pain;
+
+    private Boolean erythema; // có ban đỏ
+
+    private Boolean swelling;  // sưng tấy
+
+    private Boolean sinusTract; // có đường rò
+
+    @Column(name = "hematogenous_suspected")
+    private Boolean hematogenousSuspected; // nghi ngờ lây truyền qua đường máu
+    @Column(name = "pmma_allergy")
+    private Boolean pmmaAllergy;
+
+    @Column(name = "suspected_infection_type")
+    private String suspectedInfectionType;
+
+    private String softTissue; // tình trạng mô mềm
+
+    private String implantStability; //độ ổn định của cấy ghép
+
+    @Column(name = "prosthesis_joint")
+    private String prosthesisJoint;
+
+    @Column(name = "days_since_index_arthroplasty")
+    private Integer daysSinceIndexArthroplasty;
 
     @Column(name = "notations", columnDefinition = "TEXT")
     private String notations;
 
-    @CreationTimestamp
-    @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "created_at")
-    private Date createdAt;
 }

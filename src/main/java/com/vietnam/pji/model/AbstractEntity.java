@@ -36,14 +36,14 @@ public abstract class AbstractEntity<T extends Serializable> implements Serializ
     private String updatedBy;
 
     @PrePersist
-    public void handleBeforeCreate() {
+    protected void handleBeforeCreate() {
         this.createdBy = SecurityUtils.getCurrentUserLogin().isPresent()
                 ? SecurityUtils.getCurrentUserLogin().get()
                 : " ";
     }
 
     @PreUpdate
-    public void handleBeforeUpdate() {
+    protected void handleBeforeUpdate() {
         this.updatedBy = SecurityUtils.getCurrentUserLogin().isPresent()
                 ? SecurityUtils.getCurrentUserLogin().get()
                 : " ";

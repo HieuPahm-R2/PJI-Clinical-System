@@ -45,9 +45,6 @@ public class PjiEpisode extends AbstractEntity<Long> implements Serializable {
     @Column(name = "direct", length = 50)
     private String direct;
 
-    @Column(name = "days_treatment")
-    private Integer daysTreatment;
-
     @Column(name = "referral_source", length = 255)
     private String referralSource;
 

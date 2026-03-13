@@ -6,7 +6,6 @@
 -- 3) Support unlimited AI runs per episode
 -- 4) Support doctor review + final confirmed treatment plan
 -- 5) Support timeline UI: recommendation history + AI vs confirmed plan
--- PostgreSQL 14+
 -- ==========================================
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -15,11 +14,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- 1. ENUMS
 -- ==========================================
 DO $$ BEGIN
-    CREATE TYPE gender_type AS ENUM ('MALE', 'FEMALE', 'OTHER', 'UNKNOWN');
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-
-DO $$ BEGIN
-    CREATE TYPE episode_status AS ENUM ('OPEN', 'DISCHARGED', 'CANCELLED');
+    CREATE TYPE gender_type AS ENUM ('MALE', 'FEMALE', 'OTHER');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
@@ -31,7 +26,7 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
-    CREATE TYPE ai_run_status AS ENUM ('SUCCESS', 'FAILED', 'PARTIAL');
+    CREATE TYPE ai_run_status AS ENUM ('SUCCESS', 'FAILED', 'PARTIAL','QUEUED', 'PROCESSING', 'TIMEOUT');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
@@ -76,7 +71,10 @@ CREATE TABLE IF NOT EXISTS roles (
     name            VARCHAR(50) UNIQUE NOT NULL,
     description     TEXT,
     active          BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+     created_by          VARCHAR(255) NOT NULL,
+     updated_by          VARCHAR(255) NOT NULL,
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS users (
@@ -89,6 +87,8 @@ CREATE TABLE IF NOT EXISTS users (
     department      VARCHAR(100),
     is_active       BOOLEAN NOT NULL DEFAULT TRUE,
     last_login_at   TIMESTAMPTZ,
+     created_by          VARCHAR(255),
+     updated_by          VARCHAR(255),
     created_at      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -110,8 +110,10 @@ CREATE TABLE IF NOT EXISTS patients (
     phone            VARCHAR(20),
     career           VARCHAR(50),
     subject          VARCHAR(50),
-    address          TEXT,
-    relative_info    JSONB, 
+    address             TEXT,
+    relative_info       JSONB,
+    created_by          VARCHAR(255) NOT NULL,
+    updated_by          VARCHAR(255) NOT NULL,
     created_at          TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at          TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -119,22 +121,26 @@ CREATE TABLE IF NOT EXISTS patients (
 CREATE TABLE IF NOT EXISTS pji_episodes (
     id                  BIGSERIAL PRIMARY KEY,
     patient_id          BIGINT NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
-    episode_code        VARCHAR(50) UNIQUE,
     admission_date      DATE NOT NULL,
     discharge_date      DATE,
     department          VARCHAR(255),
+    treatment_days      INT,
+    direct              VARCHAR(50),
     reason              TEXT,
     referral_source     VARCHAR(255), -- nơi giới thiệu
-    status              episode_status NOT NULL DEFAULT 'OPEN',
-    created_by          BIGINT REFERENCES users(id),
+    status              VARCHAR(100) NOT NULL,
+    result              VARCHAR(100) NOT NULL,
+    created_by          VARCHAR(255) NOT NULL,
+    updated_by          VARCHAR(255) NOT NULL,
     created_at          TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at          TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS medical_histories (
-    episode_id                  BIGINT PRIMARY KEY REFERENCES pji_episodes(id) ON DELETE CASCADE,
+    episode_id      BIGINT PRIMARY KEY REFERENCES pji_episodes(id) ON DELETE CASCADE,
 	medical_history TEXT,
     process         TEXT,
+    antibiotic_history TEXT,
     is_allergy      BOOLEAN,
     allergy_note    VARCHAR,
     is_drug         BOOLEAN,
@@ -145,10 +151,10 @@ CREATE TABLE IF NOT EXISTS medical_histories (
     smoking_note    VARCHAR,
     is_other        BOOLEAN,
     other_note      VARCHAR,
-    created_by                  BIGINT REFERENCES users(id),
-    updated_by                  BIGINT REFERENCES users(id),
-    created_at                  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at                  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_by      VARCHAR(255) NOT NULL,
+    updated_by       VARCHAR(255) NOT NULL,
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at       TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS clinical_records (
@@ -159,21 +165,21 @@ CREATE TABLE IF NOT EXISTS clinical_records (
     blood_pressure              VARCHAR(20),
     bmi                         NUMERIC(5,2),
 	fever BOOLEAN,
-     pain BOOLEAN,
-     erythema BOOLEAN, -- có ban đỏ
+    pain BOOLEAN,
+    erythema BOOLEAN, -- có ban đỏ
     swelling BOOLEAN, -- sưng tấy
-     sinus_tract BOOLEAN, -- có đường rò xoang
-     suspected_infection_type infection_type, -- loại nhiễm trùng nghi ngờ
+    sinus_tract BOOLEAN, -- có đường rò xoang
+    suspected_infection_type infection_type, -- loại nhiễm trùng nghi ngờ
     hematogenous_suspected BOOLEAN, -- nghi ngờ lây truyền qua đường máu
     implant_stability implant_stability_type, -- Đánh giá độ ổn định của cấy ghép
-     soft_tissue VARCHAR(100), -- tình trạng mô mềm
+    soft_tissue VARCHAR(100), -- tình trạng mô mềm
     pmma_allergy BOOLEAN,
-     prosthesis_joint VARCHAR(50), -- khớp giả
+    prosthesis_joint VARCHAR(50), -- khớp giả
 
     days_since_index_arthroplasty INT, -- số ngày kể từ lần phẫu thuật thay khớp ban đầu
     notations                   TEXT, -- Khám bệnh toàn thân
-    created_by                  BIGINT REFERENCES users(id),
-    updated_by                  BIGINT REFERENCES users(id),
+    created_by      VARCHAR(255) NOT NULL,
+    updated_by       VARCHAR(255) NOT NULL,
     created_at                  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at                  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -202,10 +208,10 @@ CREATE TABLE IF NOT EXISTS lab_results (
     ig            DECIMAL(5,2),
     mcv           DECIMAL(5,2),
     mch           DECIMAL(5,2),
-    mchc          INT,
-    d_dimer NUMERIC(10,2), -- một xét nghiệm máu đo lường các mảnh protein
+    dimer NUMERIC(10,2), -- một xét nghiệm máu đo lường các mảnh protein
 	serum_il6 NUMERIC(10,2), -- một cytokine tiền viêm quan trọng
 	alpha_defensin VARCHAR(50), -- alpha-defensin trong huyết thanh
+    egfr INT, -- đánh giá chức năng thận
     -- Chỉ số dịch khớp (viêm tại chỗ)
     crp           DECIMAL(10,2),
     synovial_wbc  INT,
@@ -223,7 +229,7 @@ CREATE TABLE image_results (
     episode_id    BIGINT REFERENCES pji_episodes(id) ON DELETE CASCADE,
     type          VARCHAR(50),               -- 'X-RAY', 'MRI', 'CT', 'ULTRASOUND'
     findings      TEXT,
-    file_metadata JSONB,                     -- {'path': 's3://...', 'thumbnail': '...'}
+    file_metadata JSONB,                     -- {'path': 's3://...',}
     -- Audit fields
     created_at    TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at    TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,

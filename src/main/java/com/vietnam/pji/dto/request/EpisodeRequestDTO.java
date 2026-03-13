@@ -32,9 +32,9 @@ public class EpisodeRequestDTO {
 
     private String direct;
 
-    private Integer daysTreatment;
-
     private String referralSource;
 
     private String result;
+
+    private String status;
 }

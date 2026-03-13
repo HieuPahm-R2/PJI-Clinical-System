@@ -11,7 +11,9 @@ import org.hibernate.type.SqlTypes;
 
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.time.Year;
 import java.util.Date;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -20,7 +22,10 @@ import java.util.Date;
 @AllArgsConstructor
 @Entity
 @Table(name = "patients")
-public class Patient extends AbstractEntity implements Serializable {
+public class Patient extends AbstractEntity<Long> implements Serializable {
+
+    @Column(name = "patient_code", length = 30)
+    private String patientCode;
 
     @Column(name = "full_name", nullable = false, length = 100)
     private String fullName;
@@ -63,5 +68,22 @@ public class Patient extends AbstractEntity implements Serializable {
     @Column(name = "relative_info", columnDefinition = "jsonb")
     private String relativeInfo;
 
+    @Override
+    protected void handleBeforeCreate() {
+        super.handleBeforeCreate();
+        this.generatePatientCode();
+    }
+
+    public void generatePatientCode() {
+        if (this.patientCode == null || this.patientCode.isEmpty()) {
+            String prefix = String.valueOf(Year.now().getValue());
+            String randomPart = UUID.randomUUID()
+                    .toString()
+                    .replace("-", "")
+                    .substring(0, 6)
+                    .toUpperCase();
+            this.patientCode = prefix + randomPart; // VD: 2025A3F9C1
+        }
+    }
 
 }

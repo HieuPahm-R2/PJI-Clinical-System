@@ -4,13 +4,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vietnam.pji.model.AbstractEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.Date;
 
 @Getter
 @Setter
@@ -23,7 +21,7 @@ public class LabResult extends AbstractEntity<Long> implements Serializable {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "episode_id")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private PjiEpisode episode;
 
     // Blood markers (systemic inflammation)
@@ -39,26 +37,8 @@ public class LabResult extends AbstractEntity<Long> implements Serializable {
     @Column(name = "mono", precision = 4, scale = 1)
     private BigDecimal mono;
 
-    @Column(name = "lymph", precision = 4, scale = 1)
-    private BigDecimal lymph;
-
-    @Column(name = "eos", precision = 4, scale = 1)
-    private BigDecimal eos;
-
-    @Column(name = "baso", precision = 4, scale = 1)
-    private BigDecimal baso;
-
     @Column(name = "rbc", precision = 5, scale = 2)
     private BigDecimal rbc;
-
-    @Column(name = "hgb")
-    private Integer hgb;
-
-    @Column(name = "hct", precision = 5, scale = 3)
-    private BigDecimal hct;
-
-    @Column(name = "rdw", precision = 5, scale = 2)
-    private BigDecimal rdw;
 
     @Column(name = "ig", precision = 5, scale = 2)
     private BigDecimal ig;
@@ -69,9 +49,10 @@ public class LabResult extends AbstractEntity<Long> implements Serializable {
     @Column(name = "mch", precision = 5, scale = 2)
     private BigDecimal mch;
 
-    @Column(name = "mchc")
-    private Integer mchc;
-
+    private BigDecimal dimer; // -- một xét nghiệm máu đo lường các mảnh protein
+    private BigDecimal serum_il6; // -- một cytokine tiền viêm quan trọng
+    private BigDecimal alpha_defensin; // alpha-defensin trong huyết thanh
+    private Integer egfr;
     // Synovial fluid markers (local inflammation)
     @Column(name = "crp", precision = 10, scale = 2)
     private BigDecimal crp;
