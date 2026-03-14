@@ -12,12 +12,12 @@ const StageItem = ({ stage }: { stage: SurgeryPlanData['stages'][0] }) => {
     const [isExpanded, setIsExpanded] = useState(false);
 
     return (
-        <div className="rounded-lg border border-slate-200 bg-cyan-100 overflow-hidden transition-all duration-200 shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-green-100 overflow-hidden transition-all duration-200 shadow-sm">
             <div
                 className="flex flex-wrap items-center gap-2 p-3 cursor-pointer hover:bg-cyan-200 transition-colors"
                 onClick={() => setIsExpanded(!isExpanded)}
             >
-                <span className="text-md font-bold px-2 py-1 rounded-md bg-green-100 text-green-700 border border-green-200">
+                <span className="text-md font-bold px-2 py-1 rounded-md bg-cyan-100 text-green-700 border border-green-200">
                     Giai đoạn {stage.stageOrder}
                 </span>
                 <h4 className="text-md font-semibold text-slate-900">{stage.stageName}</h4>
@@ -32,37 +32,6 @@ const StageItem = ({ stage }: { stage: SurgeryPlanData['stages'][0] }) => {
                 </div>
             </div>
 
-            <div
-                className={`transition-all duration-300 ease-in-out origin-top ${isExpanded ? 'max-h-[1500px] opacity-100 scale-y-100' : 'max-h-0 opacity-0 scale-y-95'}`}
-            >
-                <div className="p-3 pt-0 border-t border-slate-100">
-                    {stage.intervalFromStage1 && (
-                        <p className="text-md text-indigo-700 bg-yellow-200 border border-yellow-200 rounded-md px-2 py-1 mb-2 mt-2">
-                            Khoảng cách: {stage.intervalFromStage1}
-                        </p>
-                    )}
-
-                    {stage.preconditions && stage.preconditions.length > 0 && (
-                        <div className="mb-2 mt-2">
-                            <p className="text-[11px] uppercase font-semibold tracking-wide text-slate-800 mb-1">Điều kiện trước mổ</p>
-                            <ul className="space-y-1">
-                                {stage.preconditions.map((item, idx) => (
-                                    <li key={idx} className="text-md text-slate-700">- {item}</li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
-
-                    <div className="space-y-1.5 mt-3">
-                        {stage.steps.map(step => (
-                            <div key={step.stepOrder} className="text-xs rounded-md border border-slate-200 bg-slate-50 px-2.5 py-2">
-                                <p className="font-semibold text-slate-900">Bước {step.stepOrder}: {step.stepName}</p>
-                                <p className="text-slate-600 mt-0.5 leading-relaxed">{step.description}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
         </div>
     );
 };

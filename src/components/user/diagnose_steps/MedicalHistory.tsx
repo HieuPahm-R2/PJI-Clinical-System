@@ -82,10 +82,25 @@ export const MedicalHistoryPage: React.FC<MedicalHistoryProps> = ({ onNext, onPr
 
     return (
         <>
-
+            <header className="bg-white border-b border-slate-200 px-8 py-5 flex items-center justify-between z-10 flex-shrink-0">
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Nhập thông tin bệnh án</h1>
+                    <p className="text-slate-500 text-sm mt-1">Lưu trữ thông tin về tiền sử bệnh & điều trị </p>
+                </div>
+                <div className="flex items-center gap-3 z-10">
+                    <button onClick={onPrev} className="px-6 py-3 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-2 border border-slate-200 rounded-lg bg-red-300">
+                        <span className="material-symbols-outlined text-[18px]">arrow_back</span> Quay lại
+                    </button>
+                    <div className="flex gap-3">
+                        <button onClick={onNext} className="flex items-center gap-2 rounded-lg bg-primary px-6 py-3  font-bold text-white hover:bg-cyan-400 shadow-lg shadow-blue-500/20 transition-all active:scale-95">
+                            Tiếp tục
+                        </button>
+                    </div>
+                </div>
+            </header>
             <div className="flex-1 overflow-y-auto p-8 pb-32">
-                <div className="max-w-5xl mx-auto space-y-6">
 
+                <div className="max-w-5xl mx-auto space-y-6">
                     {/* Medical History Context */}
                     <section className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
@@ -113,6 +128,16 @@ export const MedicalHistoryPage: React.FC<MedicalHistoryProps> = ({ onNext, onPr
                                     onChange={handleInputChange}
                                     className="w-full rounded-lg border-slate-300 min-h-[120px] p-3 border focus:ring-primary focus:border-primary"
                                     placeholder="Các bệnh lý nền, dị ứng, phẫu thuật trước đây..."
+                                />
+                            </label>
+                            <label className="flex flex-col gap-1.5">
+                                <span className="text-sm font-medium text-slate-700">Tiền sử điều trị kháng sinh</span>
+                                <textarea
+                                    name="pastMedicalHistory"
+                                    value={demographics.pastMedicalHistory}
+                                    onChange={handleInputChange}
+                                    className="w-full rounded-lg border-slate-300 min-h-[120px] p-3 border focus:ring-primary focus:border-primary"
+                                    placeholder="Các loại kháng sinh dùng trước đây..."
                                 />
                             </label>
 
@@ -253,18 +278,7 @@ export const MedicalHistoryPage: React.FC<MedicalHistoryProps> = ({ onNext, onPr
                 </div>
 
             </div>
-            {/* Fixed Footer with buttons */}
-            <div className="fixed bottom-0 left-72 right-0 bg-white border-t border-slate-200 p-4 px-8 flex items-center justify-between z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-                <button onClick={onPrev} className="px-6 py-3 font-medium text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-2 border border-slate-200 rounded-lg bg-red-300">
-                    <span className="material-symbols-outlined text-[18px]">arrow_back</span> Quay lại
-                </button>
-                <div className="flex gap-3">
 
-                    <button onClick={onNext} className="flex items-center gap-2 rounded-lg bg-primary px-6 py-3 font-bold text-white hover:bg-blue-600 shadow-lg shadow-blue-500/20 transition-all active:scale-95">
-                        Tiếp tục <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
-                    </button>
-                </div>
-            </div>
 
         </>
     );

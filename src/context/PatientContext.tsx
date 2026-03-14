@@ -78,24 +78,24 @@ const defaultClinical: ClinicalAssessment = {
   hematologyTests: [
     { id: 'ht_1', name: 'Bạch cầu', result: '', normalRange: '', unit: 'Tế bào/Vi trường' },
     { id: 'ht_2', name: '%NEUT', result: '', normalRange: '40 - 74', unit: '%' },
-    { id: 'ht_3', name: '%LYMPH', result: '', normalRange: '19 - 48', unit: '%' },
     { id: 'ht_4', name: '%MONO', result: '', normalRange: '3.4 - 9', unit: '%' },
-    { id: 'ht_5', name: '%EOS', result: '', normalRange: '0 - 7', unit: '%' },
-    { id: 'ht_6', name: '%BASO', result: '', normalRange: '0 - 1.5', unit: '%' },
     { id: 'ht_7', name: 'Máu lắng', result: '', normalRange: '< 10', unit: 'mm' },
     { id: 'ht_9', name: 'RBC', result: '', normalRange: '3.8 - 5.5', unit: 'g/L' },
-    { id: 'ht_10', name: 'Hgb', result: '', normalRange: '120 - 150', unit: 'g/L' },
-    { id: 'ht_11', name: 'Hct', result: '', normalRange: '0.335 - 0.45', unit: 'L/L' },
     { id: 'ht_12', name: 'MCV', result: '', normalRange: '75 - 96', unit: 'fL' },
     { id: 'ht_13', name: 'MCH', result: '', normalRange: '24 - 33', unit: 'pg' },
-    { id: 'ht_14', name: 'MCHC', result: '', normalRange: '316 - 372', unit: 'g/L' },
     { id: 'ht_15', name: 'RDW-CV', result: '', normalRange: '11.5 - 14.5', unit: '%' },
     { id: 'ht_16', name: 'IG%', result: '', normalRange: '6 - 11', unit: 'fL' },
+    { id: 'ht_17', name: 'D-dimer', result: '', normalRange: '< 0.5', unit: 'mg/L FEU' },
+    { id: 'ht_18', name: 'Serum IL-6', result: '', normalRange: '< 7.0', unit: 'pg/mL' },
+    { id: 'ht_19', name: 'Alpha Defensin', result: '', normalRange: '< 0.12', unit: 'ug/mL' },
+
+
   ],
   biochemistryTests: [
     { id: 'bc_4', name: 'Định lượng Glucose', result: '', normalRange: '4.1 - 5.6', unit: 'mmol/l' },
     { id: 'bc_5', name: 'Định lượng Urê máu', result: '', normalRange: '2.8 - 7.2', unit: 'mmol/l' },
     { id: 'bc_6', name: 'Định lượng Creatinin', result: '', normalRange: '59 - 104', unit: 'µmol/l' },
+    { id: 'ht_20', name: 'eGFR', result: '', normalRange: '>= 90', unit: 'mL/min/1.73m²' },
     { id: 'bc_7', name: 'Định lượng Albumin', result: '', normalRange: '35 - 52', unit: 'g/L' },
     { id: 'bc_8', name: 'Hoạt độ AST', result: '', normalRange: '35 - 52', unit: 'U/L' },
     { id: 'bc_9', name: 'Hoạt độ ALT', result: '', normalRange: '35 - 52', unit: 'U/L' },
@@ -103,6 +103,7 @@ const defaultClinical: ClinicalAssessment = {
     { id: 'bc_11', name: 'K+', result: '', normalRange: '3.5 - 5.0', unit: 'mmol/L' },
     { id: 'bc_12', name: 'Cl-', result: '', normalRange: '', unit: 'mmol/L' },
     { id: 'bc_13', name: 'Định lượng HbA1c', result: '', normalRange: '4 - 6.2', unit: '%' },
+
   ],
 
   fluidAnalysis: [
@@ -167,21 +168,24 @@ export const PatientProvider: React.FC<{ children: ReactNode }> = ({ children })
     return saved ? JSON.parse(saved) : defaultTreatment;
   });
 
-  useEffect(() => {
-    localStorage.setItem('pji_demographics', JSON.stringify(demographics));
-  }, [demographics]);
+  // useEffect(() => {
+  //   localStorage.setItem('pji_demographics', JSON.stringify(demographics));
+  // }, [demographics]);
 
-  useEffect(() => {
-    localStorage.setItem('pji_clinical', JSON.stringify(clinical));
-  }, [clinical]);
+  // useEffect(() => {
+  //   localStorage.setItem('pji_clinical', JSON.stringify(clinical));
+  // }, [clinical]);
 
-  useEffect(() => {
-    localStorage.setItem('pji_labData', JSON.stringify(labData));
-  }, [labData]);
+  // useEffect(() => {
+  //   localStorage.setItem('pji_labData', JSON.stringify(labData));
+  // }, [labData]);
 
-  useEffect(() => {
-    localStorage.setItem('pji_treatment', JSON.stringify(treatment));
-  }, [treatment]);
+  // useEffect(() => {
+  //   localStorage.setItem('pji_treatment', JSON.stringify(treatment));
+  // }, [treatment]);
+
+  // Removed the useEffect block because React state might not update cleanly inside it when dealing with deep nested structures like biochemistryTests.
+  // Instead, the calculation will be performed in a more controlled manner.
 
   const updateLabData = (day: string, field: keyof LabResult, value: number) => {
     setLabData(prev => prev.map(item => item.day === day ? { ...item, [field]: value } : item));

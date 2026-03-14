@@ -56,9 +56,6 @@ export interface SurgeryStageData {
   stageOrder: number;
   stageName: string;
   estimatedDurationMinutes: number;
-  intervalFromStage1?: string;
-  preconditions?: string[];
-  steps: SurgeryStepData[];
 }
 
 export interface SurgeryPlanData {
@@ -211,68 +208,12 @@ export const SURGERY_PLAN: SurgeryPlanData = {
     {
       stageOrder: 1,
       stageName: 'Giai doan 1 - Thao khop gia va dat spacer khang sinh',
-      estimatedDurationMinutes: 180,
-      steps: [
-        {
-          stepOrder: 1,
-          stepName: 'Tiep can va boc lo',
-          description: 'Rach da theo duong mo cu, lay 3-5 mau mo quanh khop gui nuoi cay va giai phau benh.',
-        },
-        {
-          stepOrder: 2,
-          stepName: 'Thao bo khop gia va xi mang',
-          description: 'Thao bo toan bo implant va xi mang, bao ton stock xuong toi da.',
-        },
-        {
-          stepOrder: 3,
-          stepName: 'Cat loc triet de',
-          description: 'Loai bo mo viem, mo hoai tu, biofilm. Rua xung NaCl 0.9% >= 6 lit.',
-        },
-        {
-          stepOrder: 4,
-          stepName: 'Dat spacer xi mang khang sinh',
-          description: 'Tron PMMA voi Vancomycin + Tobramycin, tao articulating spacer va kiem tra do vung.',
-        },
-        {
-          stepOrder: 5,
-          stepName: 'Dan luu va dong vet mo',
-          description: 'Dat dan luu hut kin 1-2 ong, dong vet mo theo lop, bang vo khuan.',
-        },
-      ],
+      estimatedDurationMinutes: 180
     },
     {
       stageOrder: 2,
       stageName: 'Giai doan 2 - Thao spacer va thay khop gia moi',
       estimatedDurationMinutes: 210,
-      intervalFromStage1: '8-12 tuan sau giai doan 1',
-      preconditions: [
-        'Het khang sinh toan than >= 2 tuan (antibiotic holiday)',
-        'CRP ve binh thuong hoac giam dang ke',
-        'Lam sang khong con dau hieu nhiem trung',
-        'Choc hut dich khop am tinh, WBC dich khop < 3000',
-      ],
-      steps: [
-        {
-          stepOrder: 1,
-          stepName: 'Tiep can va thao spacer',
-          description: 'Thao spacer, lay >= 3 mau mo gui nuoi cay va frozen section.',
-        },
-        {
-          stepOrder: 2,
-          stepName: 'Danh gia va chuan bi',
-          description: 'Danh gia stock xuong, cat loc mo ton luu, rua xung >= 3 lit, cho frozen section am tinh.',
-        },
-        {
-          stepOrder: 3,
-          stepName: 'Dat khop gia moi',
-          description: 'Doa o coi, dat cup/stem moi, thu khop va kiem tra chieu dai chi.',
-        },
-        {
-          stepOrder: 4,
-          stepName: 'Dan luu va dong vet mo',
-          description: 'Dat dan luu hut kin, dong vet mo theo lop, bang vo khuan.',
-        },
-      ],
     },
   ],
   estimatedTotalTreatmentTime: '4-6 thang (gom khoang cach 2 giai doan va phuc hoi chuc nang)',
@@ -323,15 +264,5 @@ export const RAG_CITATIONS: CitationData[] = [
     snippet: 'Uu tien theo doi AUC/MIC muc tieu 400-600 thay vi trough don thuan cho MRSA nang.',
     relevanceScore: 0.93,
     citedFor: 'Huong dan lieu va theo doi Vancomycin giai doan tan cong',
-  },
-  {
-    sourceType: 'SYSTEMATIC_REVIEW',
-    sourceTitle:
-      'Antibiotic-Loaded Bone Cement in PJI Treatment: Elution Characteristics and Outcomes',
-    sourceUri: 'https://doi.org/10.1302/0301-620X.102B10.BJJ-2020-0369',
-    snippet:
-      'Lieu tai >2g vancomycin/40g PMMA cho hieu qua elution 4-6 tuan voi doc tinh toan than thap.',
-    relevanceScore: 0.92,
-    citedFor: 'Co so lieu luong khang sinh trong xi mang spacer',
   },
 ];

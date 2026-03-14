@@ -133,33 +133,6 @@
                 "stage_order": 1,
                 "stage_name": "Giai đoạn 1 - Tháo khớp giả & đặt spacer kháng sinh",
                 "estimated_duration_minutes": 180,
-                "steps": [
-                    {
-                        "step_order": 1,
-                        "step_name": "Tiếp cận và bộc lộ",
-                        "description": "Rạch da theo đường mổ cũ (posterolateral approach). Bộc lộ khớp háng, lấy mẫu mô quanh khớp (tối thiểu 3-5 mẫu) gửi nuôi cấy và giải phẫu bệnh."
-                    },
-                    {
-                        "step_order": 2,
-                        "step_name": "Tháo bỏ khớp giả và xi măng",
-                        "description": "Tháo bỏ toàn bộ khớp giả (ổ cối + thân xương đùi) và xi măng (nếu có). Sử dụng đục chuyên dụng, osteotome. Lưu ý bảo tồn stock xương tối đa."
-                    },
-                    {
-                        "step_order": 3,
-                        "step_name": "Cắt lọc triệt để",
-                        "description": "Cắt lọc toàn bộ mô viêm, mô hoại tử, màng sinh học (biofilm) trên bề mặt xương. Rửa xung (pulse lavage) với NaCl 0.9% ≥ 6 lít."
-                    },
-                    {
-                        "step_order": 4,
-                        "step_name": "Đặt spacer xi măng kháng sinh",
-                        "description": "Trộn xi măng PMMA với Vancomycin 2g + Tobramycin 2.4g per 40g xi măng. Tạo spacer khớp động (articulating spacer) háng. Đặt vào ổ khớp, kiểm tra độ vững."
-                    },
-                    {
-                        "step_order": 5,
-                        "step_name": "Dẫn lưu và đóng vết mổ",
-                        "description": "Đặt dẫn lưu hút kín 1-2 ống. Đóng vết mổ theo lớp. Băng vô khuẩn."
-                    }
-                ]
             },
             {
                 "stage_order": 2,
@@ -172,28 +145,6 @@
                     "Lâm sàng không còn dấu hiệu nhiễm trùng",
                     "Chọc hút dịch khớp trước mổ: nuôi cấy âm tính, WBC dịch khớp < 3000"
                 ],
-                "steps": [
-                    {
-                        "step_order": 1,
-                        "step_name": "Tiếp cận và tháo spacer",
-                        "description": "Rạch da theo đường mổ cũ. Tháo bỏ spacer xi măng. Lấy mẫu mô (≥ 3 mẫu) gửi nuôi cấy và frozen section."
-                    },
-                    {
-                        "step_order": 2,
-                        "step_name": "Đánh giá và chuẩn bị",
-                        "description": "Đánh giá stock xương ổ cối và xương đùi. Cắt lọc mô viêm còn sót (nếu có). Rửa xung ≥ 3 lít. Chờ kết quả frozen section (âm tính mới tiến hành đặt khớp giả mới)."
-                    },
-                    {
-                        "step_order": 3,
-                        "step_name": "Đặt khớp giả mới (Reimplantation)",
-                        "description": "Doa ổ cối, đặt cup mới (có thể dùng augment nếu thiếu xương). Chuẩn bị ống tủy xương đùi, đặt stem mới. Lắp chỏm, thử khớp, kiểm tra chiều dài chi và biên độ vận động."
-                    },
-                    {
-                        "step_order": 4,
-                        "step_name": "Dẫn lưu và đóng vết mổ",
-                        "description": "Đặt dẫn lưu hút kín. Đóng vết mổ theo lớp. Băng vô khuẩn."
-                    }
-                ]
             }
         ],
         "estimated_total_treatment_time": "4-6 tháng (bao gồm khoảng cách giữa 2 giai đoạn và phục hồi chức năng)",
