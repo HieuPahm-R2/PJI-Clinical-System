@@ -1,8 +1,6 @@
 package com.vietnam.pji.model.auth;
 
 import java.io.Serializable;
-import java.util.Date;
-
 import com.vietnam.pji.model.AbstractEntity;
 import jakarta.persistence.*;
 import org.hibernate.annotations.JdbcTypeCode;

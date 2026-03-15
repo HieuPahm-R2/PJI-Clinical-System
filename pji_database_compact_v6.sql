@@ -34,8 +34,7 @@ DO $$ BEGIN
         'DIAGNOSTIC_TEST',
         'SYSTEMIC_ANTIBIOTIC',
         'LOCAL_ANTIBIOTIC',
-        'SURGERY_PROCEDURE',
-    );
+        'SURGERY_PROCEDURE');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
@@ -60,12 +59,6 @@ CREATE TABLE IF NOT EXISTS permissions (
     updated_by  VARCHAR(255),
     updated_at  TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
-
-CREATE TABLE IF NOT EXISTS role_permissions (
-    role_id       BIGINT NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
-    permission_id BIGINT NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
-    PRIMARY KEY (role_id, permission_id)
-);
 CREATE TABLE IF NOT EXISTS roles (
     id              BIGSERIAL PRIMARY KEY,
     name            VARCHAR(50) UNIQUE NOT NULL,
@@ -76,6 +69,12 @@ CREATE TABLE IF NOT EXISTS roles (
      updated_by          VARCHAR(255) NOT NULL,
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE IF NOT EXISTS role_permissions (
+    role_id       BIGINT NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+    permission_id BIGINT NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
+    PRIMARY KEY (role_id, permission_id)
+);
+
 
 CREATE TABLE IF NOT EXISTS users (
     id              BIGSERIAL PRIMARY KEY,
@@ -101,7 +100,7 @@ CREATE TABLE IF NOT EXISTS patients (
     patient_code        VARCHAR(50) UNIQUE,
     full_name           VARCHAR(150) NOT NULL,
     date_of_birth       DATE NOT NULL,
-    gender              gender_type NOT NULL DEFAULT 'UNKNOWN',
+    gender              gender_type NOT NULL,
     identity_card       VARCHAR(50),
 	insurance_number VARCHAR(50),
 	insurance_expired DATE,
@@ -156,6 +155,20 @@ CREATE TABLE IF NOT EXISTS medical_histories (
     created_at       TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at       TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TYPE infection_type AS ENUM (
+    'EARLY_POSTOPERATIVE',   -- nhiễm trùng sớm sau mổ (< 3 tháng)
+    'DELAYED',               -- nhiễm trùng muộn (3-24 tháng)
+    'LATE_HEMATOGENOUS',     -- nhiễm trùng đường máu (>24 tháng)
+    'ACUTE_HEMATOGENOUS',    -- nhiễm trùng cấp đường máu
+    'CHRONIC',               -- nhiễm trùng mạn tính
+    'UNKNOWN'
+);
+CREATE TYPE implant_stability_type AS ENUM (
+    'STABLE',        -- implant vững
+    'POSSIBLY_LOOSE',-- nghi ngờ lỏng
+    'LOOSE',         -- lỏng rõ ràng
+    'UNKNOWN'
+);
 
 CREATE TABLE IF NOT EXISTS clinical_records (
     id                          BIGSERIAL PRIMARY KEY,
@@ -169,19 +182,18 @@ CREATE TABLE IF NOT EXISTS clinical_records (
     erythema BOOLEAN, -- có ban đỏ
     swelling BOOLEAN, -- sưng tấy
     sinus_tract BOOLEAN, -- có đường rò xoang
-    suspected_infection_type infection_type, -- loại nhiễm trùng nghi ngờ
+    suspected_infection_type infection_type not null, -- loại nhiễm trùng nghi ngờ
     hematogenous_suspected BOOLEAN, -- nghi ngờ lây truyền qua đường máu
-    implant_stability implant_stability_type, -- Đánh giá độ ổn định của cấy ghép
+    implant_stability implant_stability_type not null , -- Đánh giá độ ổn định của cấy ghép
     soft_tissue VARCHAR(100), -- tình trạng mô mềm
     pmma_allergy BOOLEAN,
-    prosthesis_joint VARCHAR(50), -- khớp giả
-
+    prosthesis_joint VARCHAR(200), -- khớp giả
     days_since_index_arthroplasty INT, -- số ngày kể từ lần phẫu thuật thay khớp ban đầu
     notations                   TEXT, -- Khám bệnh toàn thân
     created_by      VARCHAR(255) NOT NULL,
     updated_by       VARCHAR(255) NOT NULL,
-    created_at                  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at                  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at        TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS surgeries (
@@ -361,6 +373,9 @@ CREATE TABLE IF NOT EXISTS treatment_plan_versions (
 CREATE TABLE ai_chat_sessions (
     id          BIGSERIAL PRIMARY KEY,
     user_id     BIGINT REFERENCES users(id),
+    run_id 		UUID REFERENCES ai_recommendation_runs(id),
+    current_item_id UUID REFERENCES ai_recommendation_items(id),
+    chat_type VARCHAR(50),
     episode_id  BIGINT REFERENCES pji_episodes(id),
     title       VARCHAR(255),
     is_archived BOOLEAN DEFAULT FALSE,
@@ -373,6 +388,7 @@ CREATE TABLE ai_chat_messages (
     role            VARCHAR(15),             -- 'user', 'assistant', 'system'
     content         TEXT NOT NULL,
     tokens_used     INT,
+    context_json 	JSONB,
     latency_ms      INT,
     references_json JSONB,
     created_at      TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
@@ -382,21 +398,14 @@ CREATE TABLE ai_chat_messages (
 -- ==========================================
 -- 5. INDEXES
 -- ==========================================
-CREATE INDEX IF NOT EXISTS idx_patients_full_name ON patients(full_name);
 CREATE INDEX IF NOT EXISTS idx_patients_identity_card ON patients(identity_card);
-
 CREATE INDEX IF NOT EXISTS idx_episodes_patient_id ON pji_episodes(patient_id);
 CREATE INDEX IF NOT EXISTS idx_episodes_status ON pji_episodes(status);
-CREATE INDEX IF NOT EXISTS idx_episodes_department ON pji_episodes(department);
 
 CREATE INDEX IF NOT EXISTS idx_clinical_records_episode_time ON clinical_records(episode_id, recorded_at DESC);
-CREATE INDEX IF NOT EXISTS idx_lab_results_episode_time ON lab_results(episode_id, collected_at DESC);
-CREATE INDEX IF NOT EXISTS idx_culture_results_episode_time ON culture_results(episode_id, collected_at DESC);
 CREATE INDEX IF NOT EXISTS idx_sensitivity_results_culture_id ON sensitivity_results(culture_id);
 
 CREATE INDEX IF NOT EXISTS idx_snapshots_episode_id ON case_clinical_snapshots(episode_id);
-CREATE INDEX IF NOT EXISTS idx_snapshots_input_hash ON case_clinical_snapshots(normalized_input_hash);
-CREATE INDEX IF NOT EXISTS idx_snapshots_json_gin ON case_clinical_snapshots USING GIN(snapshot_data_json);
 
 CREATE INDEX IF NOT EXISTS idx_ai_runs_episode_id ON ai_recommendation_runs(episode_id);
 CREATE INDEX IF NOT EXISTS idx_ai_runs_snapshot_id ON ai_recommendation_runs(snapshot_id);
@@ -408,7 +417,6 @@ CREATE INDEX IF NOT EXISTS idx_ai_items_category ON ai_recommendation_items(cate
 CREATE INDEX IF NOT EXISTS idx_ai_items_json_gin ON ai_recommendation_items USING GIN(item_json);
 
 CREATE INDEX IF NOT EXISTS idx_ai_citations_run_id ON ai_rag_citations(run_id);
-CREATE INDEX IF NOT EXISTS idx_ai_citations_item_id ON ai_rag_citations(item_id);
 
 CREATE INDEX IF NOT EXISTS idx_reviews_episode_id ON doctor_recommendation_reviews(episode_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_run_id ON doctor_recommendation_reviews(run_id);
@@ -419,9 +427,26 @@ CREATE INDEX IF NOT EXISTS idx_plan_versions_current ON treatment_plan_versions(
 CREATE UNIQUE INDEX IF NOT EXISTS uq_treatment_plan_current_per_episode
     ON treatment_plan_versions(episode_id)
     WHERE is_current = TRUE;
+CREATE INDEX IF NOT EXISTS idx_lab_results_episode_created_at
+    ON lab_results(episode_id, created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_compare_logs_episode_id ON recommendation_compare_logs(episode_id);
-CREATE INDEX IF NOT EXISTS idx_compare_logs_runs ON recommendation_compare_logs(left_run_id, right_run_id);
+CREATE INDEX IF NOT EXISTS idx_culture_results_episode_created_at
+    ON culture_results(episode_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_image_results_episode_created_at
+    ON image_results(episode_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_ai_chat_sessions_episode_id
+    ON ai_chat_sessions(episode_id);
+
+CREATE INDEX IF NOT EXISTS idx_ai_chat_sessions_run_id
+    ON ai_chat_sessions(run_id);
+
+CREATE INDEX IF NOT EXISTS idx_ai_chat_sessions_user_id
+    ON ai_chat_sessions(user_id);
+
+CREATE INDEX IF NOT EXISTS idx_ai_chat_messages_session_created_at
+    ON ai_chat_messages(session_id, created_at ASC);
 
 -- ==========================================
 -- 6. HELPFUL COMMENTS

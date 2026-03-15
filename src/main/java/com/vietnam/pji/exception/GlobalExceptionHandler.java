@@ -29,6 +29,7 @@ public class GlobalExceptionHandler {
      * @return errorResponse
      */
     @ExceptionHandler({ ConstraintViolationException.class,
+            BusinessException.class,
             MissingServletRequestParameterException.class,
             MethodArgumentNotValidException.class })
     @ResponseStatus(BAD_REQUEST)

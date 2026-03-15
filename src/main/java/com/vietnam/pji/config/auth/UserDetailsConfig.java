@@ -1,4 +1,4 @@
-package com.vietnam.pji.config;
+package com.vietnam.pji.config.auth;
 
 import com.vietnam.pji.services.UserService;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

@@ -4,9 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vietnam.pji.model.AbstractEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -24,7 +21,7 @@ public class ClinicalRecord extends AbstractEntity<Long> implements Serializable
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "episode_id")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private PjiEpisode episode;
 
     @Column(name = "on_illness")
@@ -42,7 +39,7 @@ public class ClinicalRecord extends AbstractEntity<Long> implements Serializable
 
     private Boolean erythema; // có ban đỏ
 
-    private Boolean swelling;  // sưng tấy
+    private Boolean swelling; // sưng tấy
 
     private Boolean sinusTract; // có đường rò
 
@@ -56,7 +53,7 @@ public class ClinicalRecord extends AbstractEntity<Long> implements Serializable
 
     private String softTissue; // tình trạng mô mềm
 
-    private String implantStability; //độ ổn định của cấy ghép
+    private String implantStability; // độ ổn định của cấy ghép
 
     @Column(name = "prosthesis_joint")
     private String prosthesisJoint;

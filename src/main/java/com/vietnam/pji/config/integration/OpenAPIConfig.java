@@ -1,4 +1,4 @@
-package com.vietnam.pji.config;
+package com.vietnam.pji.config.integration;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;

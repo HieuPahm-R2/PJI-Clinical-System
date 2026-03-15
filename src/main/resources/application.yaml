@@ -1,7 +1,7 @@
 spring:
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/pji_nodev}
-    username: postgres
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/pji_dev}
+    username: user
     password: 123456
   jpa:
     hibernate:
@@ -34,6 +34,11 @@ spring:
     #Phiên bản baseline sẽ = 1 và không thực hiện bất kỳ thay đổi nào trong DB
     baseline-on-migrate: true
     baseline-version: 0
+integration:
+  minio:
+    access-key: admin
+    secret-key: admin2026
+    url: http://localhost:9000
 secure:
   jwt:
     base64-secret: qoAEABDke07+AVLepXB4aCMtsT0wMAqR5x2VFyldsnx6e75YQkJH2UcZKTjEyoNgG71SBCXfq5N6NVZxWOfsHQ==
@@ -57,6 +62,18 @@ openapi:
     serverName: Server Dev
     title: API Document
     version: 1.0.0
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+ai:
+  service:
+    base-url: ${AI_SERVICE_URL:http://localhost:8000}
+    connect-timeout: 3000
+    read-timeout: 60000
 
 server:
   port: 8085

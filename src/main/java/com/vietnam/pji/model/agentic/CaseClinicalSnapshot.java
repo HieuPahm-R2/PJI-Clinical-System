@@ -17,21 +17,21 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "ai_predictions")
-public class AiPrediction extends AbstractEntity<Long> implements Serializable {
+@Table(name = "case_clinical_snapshots")
+public class CaseClinicalSnapshot extends AbstractEntity<Long> implements Serializable {
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "episode_id")
+    @JoinColumn(name = "episode_id", nullable = false)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private PjiEpisode episode;
 
-    @Column(name = "risk_level", length = 50)
-    private String riskLevel;
-
-    @Column(name = "infection_probability", precision = 5, scale = 2)
-    private BigDecimal infectionProbability;
+    @Column(name = "snapshot_no")
+    private Integer snapshotNo;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "reasoning_json", columnDefinition = "jsonb")
-    private String reasoningJson;
+    @Column(name = "snapshot_data_json", columnDefinition = "jsonb")
+    private String snapshotDataJson;
+
+    @Column(name = "data_completeness_score", precision = 5, scale = 2)
+    private BigDecimal dataCompletenessScore;
 }

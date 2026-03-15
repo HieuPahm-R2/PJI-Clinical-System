@@ -1,4 +1,4 @@
-package com.vietnam.pji.config;
+package com.vietnam.pji.config.auth;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
