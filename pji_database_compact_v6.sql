@@ -84,6 +84,8 @@ CREATE TABLE IF NOT EXISTS users (
     fullname       VARCHAR(255) NOT NULL,
     phone           VARCHAR(20),
     department      VARCHAR(100),
+    avatar TEXT,
+    refresh_token TEXT,
     is_active       BOOLEAN NOT NULL DEFAULT TRUE,
     last_login_at   TIMESTAMPTZ,
      created_by          VARCHAR(255),
