@@ -1,0 +1,80 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/pji_dev}
+    username: user
+    password: 123456
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate: format_sql:true
+  application:
+    name: pji
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      database: 0           # Database number
+      timeout: 60000
+      jedis:
+        pool:
+          max-active: 8     # Số connection tối đa
+          max-idle: 8       # Số idle connection tối đa
+          min-idle: 0       # Số idle connection tối thiểu
+          max-wait: -1ms    # Thời gian chờ tối đa
+  servlet:
+    multipart:
+      max-file-size: 1000MB
+      max-request-size: 1000MB
+  #flyway
+  # dẫn tới thư mục chứa các script Flyway
+  flyway:
+    locations: classpath:/db/migration,classpath:/dev/db/migration
+    #Phiên bản baseline sẽ = 1 và không thực hiện bất kỳ thay đổi nào trong DB
+    baseline-on-migrate: true
+    baseline-version: 0
+integration:
+  minio:
+    access-key: admin
+    secret-key: admin2026
+    url: http://localhost:9000
+secure:
+  jwt:
+    base64-secret: qoAEABDke07+AVLepXB4aCMtsT0wMAqR5x2VFyldsnx6e75YQkJH2UcZKTjEyoNgG71SBCXfq5N6NVZxWOfsHQ==
+    refresh-token-validity-in-seconds: 604800  # 7 days
+    access-token-validity-in-seconds: 3600     # 1 hour
+api:
+  prefix: /api/v1
+  messages:
+    basename: i18n/messages
+    encoding: UTF-8
+    default-locale: en
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+openapi:
+  service:
+    api-docs: api-service
+    serverUrl: http://localhost:${server.port}
+    serverName: Server Dev
+    title: API Document
+    version: 1.0.0
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+ai:
+  service:
+    base-url: ${AI_SERVICE_URL:http://localhost:8000}
+    connect-timeout: 3000
+    read-timeout: 60000
+
+server:
+  port: 8085
+
