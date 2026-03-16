@@ -4,15 +4,12 @@ import com.vietnam.pji.constant.GenderEnum;
 import com.vietnam.pji.model.AbstractEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
-
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.Year;
-import java.util.Date;
+import java.util.Map;
 import java.util.UUID;
 
 @Getter
@@ -34,7 +31,8 @@ public class Patient extends AbstractEntity<Long> implements Serializable {
     private LocalDate dateOfBirth;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "gender", length = 15)
+    @Column(name = "gender", columnDefinition = "gender_type")
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private GenderEnum gender;
 
     @Column(name = "identity_card", unique = true, length = 50)
@@ -66,7 +64,7 @@ public class Patient extends AbstractEntity<Long> implements Serializable {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "relative_info", columnDefinition = "jsonb")
-    private String relativeInfo;
+    private Map<String, Object> relativeInfo;
 
     @Override
     protected void handleBeforeCreate() {
