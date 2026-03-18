@@ -232,8 +232,8 @@ CREATE TABLE IF NOT EXISTS lab_results (
     synovial_pmn  DECIMAL(5,2),
     -- Các chỉ số sinh hóa (glucose, ure, creatinine, alt, ast, alb, natri, clo, kali, hba1c...)
     biochemical_data JSONB,
-    created_by                  BIGINT REFERENCES users(id),
-    updated_by                  BIGINT REFERENCES users(id),
+    created_by          VARCHAR(200),
+    updated_by          VARCHAR(200),
     created_at                  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at                  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -247,8 +247,8 @@ CREATE TABLE image_results (
     -- Audit fields
     created_at    TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at    TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    created_by    BIGINT REFERENCES users(id),
-    updated_by    BIGINT REFERENCES users(id)
+   created_by          VARCHAR(200),
+    updated_by          VARCHAR(200)
 );
 
 CREATE TABLE IF NOT EXISTS culture_results (
@@ -260,8 +260,8 @@ CREATE TABLE IF NOT EXISTS culture_results (
     result_status               sample_result_status NOT NULL DEFAULT 'PENDING',
     gram_type                   VARCHAR(20),
     notes                       TEXT,
-    created_by                  BIGINT REFERENCES users(id),
-    updated_by                  BIGINT REFERENCES users(id),
+   created_by          VARCHAR(200),
+    updated_by          VARCHAR(200),
     created_at                  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at                  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -272,8 +272,8 @@ CREATE TABLE IF NOT EXISTS sensitivity_results (
     antibiotic_name             VARCHAR(100) NOT NULL,
     mic_value                   VARCHAR(20),
     sensitivity_code            VARCHAR(10),
-    created_by                  BIGINT REFERENCES users(id),
-    updated_by                  BIGINT REFERENCES users(id),
+    created_by          VARCHAR(200),
+    updated_by          VARCHAR(200),
     created_at                  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at                  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

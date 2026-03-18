@@ -56,7 +56,8 @@ public class EpisodeSnapshotAssemblerServiceImpl implements EpisodeSnapshotAssem
         Map<String, Object> demographics = new LinkedHashMap<>();
         demographics.put("patient_code", patient.getPatientCode());
         demographics.put("full_name", patient.getFullName());
-        demographics.put("date_of_birth", patient.getDateOfBirth() != null ? patient.getDateOfBirth().toString() : null);
+        demographics.put("date_of_birth",
+                patient.getDateOfBirth() != null ? patient.getDateOfBirth().toString() : null);
         demographics.put("gender", patient.getGender() != null ? patient.getGender().name() : null);
         snapshot.put("patient_demographics", demographics);
         completedSections++;
@@ -97,7 +98,8 @@ public class EpisodeSnapshotAssemblerServiceImpl implements EpisodeSnapshotAssem
             Map<String, Object> clinical = new LinkedHashMap<>();
             clinical.put("record_id", cr.getId());
             clinical.put("recorded_at", cr.getCreatedAt() != null ? cr.getCreatedAt().toInstant().toString() : null);
-            clinical.put("illness_onset_date", cr.getOnIllness() != null ? cr.getOnIllness().toString() : null);
+            clinical.put("illness_onset_date",
+                    cr.getIllnessOnsetDate() != null ? cr.getIllnessOnsetDate().toString() : null);
 
             Map<String, Object> vitals = new LinkedHashMap<>();
             vitals.put("blood_pressure", cr.getBloodPressure());
@@ -162,7 +164,8 @@ public class EpisodeSnapshotAssemblerServiceImpl implements EpisodeSnapshotAssem
                 for (int i = 1; i < trends.size(); i++) {
                     LabResult lr = trends.get(i);
                     Map<String, Object> trendItem = new LinkedHashMap<>();
-                    trendItem.put("created_at", lr.getCreatedAt() != null ? lr.getCreatedAt().toInstant().toString() : null);
+                    trendItem.put("created_at",
+                            lr.getCreatedAt() != null ? lr.getCreatedAt().toInstant().toString() : null);
                     trendItem.put("crp", lr.getCrp());
                     trendItem.put("esr", lr.getEsr());
                     trendItem.put("wbc_blood", lr.getWbcBlood());
@@ -189,7 +192,9 @@ public class EpisodeSnapshotAssemblerServiceImpl implements EpisodeSnapshotAssem
                 item.put("findings", img.getFindings());
                 if (img.getFileMetadata() != null) {
                     try {
-                        item.put("file_metadata", objectMapper.readValue(img.getFileMetadata(), new TypeReference<Map<String, Object>>() {}));
+                        item.put("file_metadata",
+                                objectMapper.readValue(img.getFileMetadata(), new TypeReference<Map<String, Object>>() {
+                                }));
                     } catch (Exception e) {
                         item.put("file_metadata", img.getFileMetadata());
                     }
@@ -210,7 +215,7 @@ public class EpisodeSnapshotAssemblerServiceImpl implements EpisodeSnapshotAssem
                 Map<String, Object> item = new LinkedHashMap<>();
                 item.put("culture_id", c.getId());
                 item.put("sample_type", c.getSampleType());
-                item.put("organism_name", c.getOrganismName());
+                item.put("organism_name", c.getName());
                 item.put("result_status", c.getResult());
                 item.put("gram_type", c.getGramType());
                 item.put("incubation_days", c.getIncubationDays());
@@ -247,12 +252,18 @@ public class EpisodeSnapshotAssemblerServiceImpl implements EpisodeSnapshotAssem
         Map<String, Object> ordered = new LinkedHashMap<>();
         ordered.put("snapshot_metadata", snapshot.get("snapshot_metadata"));
         ordered.put("patient_demographics", snapshot.get("patient_demographics"));
-        if (snapshot.containsKey("medical_history")) ordered.put("medical_history", snapshot.get("medical_history"));
-        if (snapshot.containsKey("clinical_records")) ordered.put("clinical_records", snapshot.get("clinical_records"));
-        if (snapshot.containsKey("surgeries")) ordered.put("surgeries", snapshot.get("surgeries"));
-        if (snapshot.containsKey("lab_results")) ordered.put("lab_results", snapshot.get("lab_results"));
-        if (snapshot.containsKey("image_results")) ordered.put("image_results", snapshot.get("image_results"));
-        if (snapshot.containsKey("culture_results")) ordered.put("culture_results", snapshot.get("culture_results"));
+        if (snapshot.containsKey("medical_history"))
+            ordered.put("medical_history", snapshot.get("medical_history"));
+        if (snapshot.containsKey("clinical_records"))
+            ordered.put("clinical_records", snapshot.get("clinical_records"));
+        if (snapshot.containsKey("surgeries"))
+            ordered.put("surgeries", snapshot.get("surgeries"));
+        if (snapshot.containsKey("lab_results"))
+            ordered.put("lab_results", snapshot.get("lab_results"));
+        if (snapshot.containsKey("image_results"))
+            ordered.put("image_results", snapshot.get("image_results"));
+        if (snapshot.containsKey("culture_results"))
+            ordered.put("culture_results", snapshot.get("culture_results"));
 
         BigDecimal completeness = totalSections > 0
                 ? BigDecimal.valueOf(completedSections * 100.0 / totalSections).setScale(2, BigDecimal.ROUND_HALF_UP)
@@ -282,9 +293,9 @@ public class EpisodeSnapshotAssemblerServiceImpl implements EpisodeSnapshotAssem
         inflammatory.put("crp_unit", "mg/L");
         inflammatory.put("d_dimer", lr.getDimer());
         inflammatory.put("d_dimer_unit", "mg/L FEU");
-        inflammatory.put("serum_il6", lr.getSerum_il6());
+        inflammatory.put("serum_il6", lr.getSerumIl6());
         inflammatory.put("serum_il6_unit", "pg/mL");
-        inflammatory.put("alpha_defensin", lr.getAlpha_defensin());
+        inflammatory.put("alpha_defensin", lr.getAlphaDefensin());
         map.put("inflammatory_markers_blood", inflammatory);
 
         Map<String, Object> hematology = new LinkedHashMap<>();
@@ -308,8 +319,7 @@ public class EpisodeSnapshotAssemblerServiceImpl implements EpisodeSnapshotAssem
         // biochemical_data from JSONB
         if (lr.getBiochemicalData() != null) {
             try {
-                Map<String, Object> biochem = objectMapper.readValue(lr.getBiochemicalData(), new TypeReference<>() {});
-                map.put("biochemical_data", biochem);
+                map.put("biochemical_data", lr.getBiochemicalData());
             } catch (Exception e) {
                 log.warn("Failed to parse biochemical_data for lab_id={}", lr.getId());
             }

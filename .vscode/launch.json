@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-PjiApplication<pji>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.vietnam.pji.PjiApplication",
+            "projectName": "pji",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}

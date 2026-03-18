@@ -2,15 +2,10 @@ package com.vietnam.pji.model.medical;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vietnam.pji.model.AbstractEntity;
-import com.vietnam.pji.model.auth.User;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
 import java.io.Serializable;
 import java.time.LocalDate;
-import java.util.Date;
 
 @Getter
 @Setter
@@ -21,10 +16,9 @@ import java.util.Date;
 @Table(name = "pji_episodes")
 public class PjiEpisode extends AbstractEntity<Long> implements Serializable {
 
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "patient_id")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private Patient patient;
 
     @Column(name = "admission_date", nullable = false)
@@ -50,6 +44,6 @@ public class PjiEpisode extends AbstractEntity<Long> implements Serializable {
 
     @Column(name = "result", length = 30)
     private String result;
-
-
+    @Column(name = "status", length = 100)
+    private String status;
 }

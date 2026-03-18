@@ -1,14 +1,14 @@
 package com.vietnam.pji.model.medical;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.vietnam.pji.dto.response.Measurement;
 import com.vietnam.pji.model.AbstractEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
-
 import java.io.Serializable;
-import java.math.BigDecimal;
+import java.util.Map;
 
 @Getter
 @Setter
@@ -25,47 +25,71 @@ public class LabResult extends AbstractEntity<Long> implements Serializable {
     private PjiEpisode episode;
 
     // Blood markers (systemic inflammation)
-    @Column(name = "esr")
-    private Integer esr;
+    // Chỉ số máu
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "esr", columnDefinition = "jsonb")
+    private Measurement esr;
 
-    @Column(name = "wbc_blood", precision = 10, scale = 2)
-    private BigDecimal wbcBlood;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "wbc_blood", columnDefinition = "jsonb")
+    private Measurement wbcBlood;
 
-    @Column(name = "neut", precision = 5, scale = 2)
-    private BigDecimal neut;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "neut", columnDefinition = "jsonb")
+    private Measurement neut;
 
-    @Column(name = "mono", precision = 4, scale = 1)
-    private BigDecimal mono;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "mono", columnDefinition = "jsonb")
+    private Measurement mono;
 
-    @Column(name = "rbc", precision = 5, scale = 2)
-    private BigDecimal rbc;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "rbc", columnDefinition = "jsonb")
+    private Measurement rbc;
 
-    @Column(name = "ig", precision = 5, scale = 2)
-    private BigDecimal ig;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "ig", columnDefinition = "jsonb")
+    private Measurement ig;
 
-    @Column(name = "mcv", precision = 5, scale = 2)
-    private BigDecimal mcv;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "mcv", columnDefinition = "jsonb")
+    private Measurement mcv;
 
-    @Column(name = "mch", precision = 5, scale = 2)
-    private BigDecimal mch;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "mch", columnDefinition = "jsonb")
+    private Measurement mch;
 
-    private BigDecimal dimer; // -- một xét nghiệm máu đo lường các mảnh protein
-    private BigDecimal serum_il6; // -- một cytokine tiền viêm quan trọng
-    private BigDecimal alpha_defensin; // alpha-defensin trong huyết thanh
-    private Integer egfr;
-    // Synovial fluid markers (local inflammation)
-    @Column(name = "crp", precision = 10, scale = 2)
-    private BigDecimal crp;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "dimer", columnDefinition = "jsonb")
+    private Measurement dimer;
 
-    @Column(name = "synovial_wbc")
-    private Integer synovialWbc;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "serum_il6", columnDefinition = "jsonb")
+    private Measurement serumIl6;
 
-    @Column(name = "synovial_pmn", precision = 5, scale = 2)
-    private BigDecimal synovialPmn;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "alpha_defensin", columnDefinition = "jsonb")
+    private Measurement alphaDefensin;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "egfr", columnDefinition = "jsonb")
+    private Measurement egfr;
+
+    // Chỉ số dịch khớp
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "crp", columnDefinition = "jsonb")
+    private Measurement crp;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "synovial_wbc", columnDefinition = "jsonb")
+    private Measurement synovialWbc;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "synovial_pmn", columnDefinition = "jsonb")
+    private Measurement synovialPmn;
 
     // Biochemical data (JSONB)
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "biochemical_data", columnDefinition = "jsonb")
-    private String biochemicalData;
+    private Map<String, Object> biochemicalData;
 
 }

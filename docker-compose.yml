@@ -1,0 +1,43 @@
+services:
+  backend:
+    build: ./app/backend
+    container_name: todo-backend
+    env_file:
+      - ./app/backend/.env
+    expose:
+      - "8000"
+    networks:
+      - todo-network
+    restart: always
+
+  frontend:
+    build:
+      context: ./app/frontend
+      args:
+        REACT_APP_API_URL: /api
+    container_name: todo-frontend
+    expose:
+      - "80"
+    depends_on:
+      - backend
+    networks:
+      - todo-network
+    restart: always
+
+  nginx-proxy-manager:
+    image: jc21/nginx-proxy-manager:2.14.0
+    container_name: nginx-proxy-manager
+    ports:
+      - "80:80"
+      - "81:81"
+      - "443:443"
+    volumes:
+      - ./nginx/data:/data
+      - ./nginx/letsencrypt:/etc/letsencrypt
+    networks:
+      - todo-network
+    restart: always
+
+networks:
+  todo-network:
+    external: true

@@ -1,7 +1,6 @@
 package com.vietnam.pji.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import jakarta.persistence.Column;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,8 +17,8 @@ public class ClinicalRecordRequestDTO {
     private Long episodeId;
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate onIllness;
+    @JsonFormat(pattern = "dd-MM-yyyy")
+    private LocalDate illnessOnsetDate;
 
     private String bloodPressure;
 
@@ -28,7 +27,7 @@ public class ClinicalRecordRequestDTO {
     private Boolean fever;
     private Boolean pain;
     private Boolean erythema; // có ban đỏ
-    private Boolean swelling;  // sưng tấy
+    private Boolean swelling; // sưng tấy
     private Boolean sinusTract; // có đường rò
 
     private Boolean hematogenousSuspected; // nghi ngờ lây truyền qua đường máu
@@ -39,7 +38,7 @@ public class ClinicalRecordRequestDTO {
 
     private String softTissue; // tình trạng mô mềm
 
-    private String implantStability; //độ ổn định của cấy ghép
+    private String implantStability; // độ ổn định của cấy ghép
 
     private String prosthesisJoint;
 

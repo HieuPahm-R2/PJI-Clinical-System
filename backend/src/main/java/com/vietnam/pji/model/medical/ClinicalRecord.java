@@ -1,14 +1,17 @@
 package com.vietnam.pji.model.medical;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.vietnam.pji.constant.ImplantType;
+import com.vietnam.pji.constant.InfectionType;
 import com.vietnam.pji.model.AbstractEntity;
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Date;
+
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Getter
 @Setter
@@ -24,8 +27,8 @@ public class ClinicalRecord extends AbstractEntity<Long> implements Serializable
     @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private PjiEpisode episode;
 
-    @Column(name = "on_illness")
-    private LocalDate onIllness;
+    @Column(name = "illness_onset_date")
+    private LocalDate illnessOnsetDate;
 
     @Column(name = "blood_pressure", length = 20)
     private String bloodPressure;
@@ -48,12 +51,17 @@ public class ClinicalRecord extends AbstractEntity<Long> implements Serializable
     @Column(name = "pmma_allergy")
     private Boolean pmmaAllergy;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "suspected_infection_type")
-    private String suspectedInfectionType;
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    private InfectionType suspectedInfectionType;
 
     private String softTissue; // tình trạng mô mềm
 
-    private String implantStability; // độ ổn định của cấy ghép
+    @Enumerated(EnumType.STRING)
+    @Column(name = "implant_stability", columnDefinition = "implant_stability_type")
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    private ImplantType implantStability; // độ ổn định của cấy ghép
 
     @Column(name = "prosthesis_joint")
     private String prosthesisJoint;
