@@ -11,6 +11,8 @@ public class MedicalHistoryRequestDTO {
 
     private String process;
 
+    private String antibioticHistory;
+
     private Boolean isAllergy;
 
     private String allergyNote;

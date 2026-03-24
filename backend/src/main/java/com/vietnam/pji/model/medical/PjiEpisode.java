@@ -1,6 +1,7 @@
 package com.vietnam.pji.model.medical;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.vietnam.pji.constant.DirectEnum;
 import com.vietnam.pji.model.AbstractEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -36,8 +37,9 @@ public class PjiEpisode extends AbstractEntity<Long> implements Serializable {
     @Column(name = "department", length = 255)
     private String department;
 
-    @Column(name = "direct", length = 50)
-    private String direct;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "direct")
+    private DirectEnum direct;
 
     @Column(name = "referral_source", length = 255)
     private String referralSource;

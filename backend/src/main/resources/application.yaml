@@ -19,7 +19,7 @@ spring:
   data:
     redis:
       host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
+      port: ${REDIS_PORT:6377}
       database: 0           # Database number
       timeout: 60000
       jedis:

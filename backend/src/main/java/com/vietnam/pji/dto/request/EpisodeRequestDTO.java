@@ -1,10 +1,11 @@
 package com.vietnam.pji.dto.request;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.format.annotation.DateTimeFormat;
+
+import com.vietnam.pji.constant.DirectEnum;
 
 import java.time.LocalDate;
 
@@ -28,7 +29,7 @@ public class EpisodeRequestDTO {
 
     private String department;
 
-    private String direct;
+    private DirectEnum direct;
 
     private String referralSource;
 
