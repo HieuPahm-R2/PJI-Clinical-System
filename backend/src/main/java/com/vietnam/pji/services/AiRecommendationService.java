@@ -7,7 +7,11 @@ import org.springframework.data.domain.Pageable;
 
 public interface AiRecommendationService {
 
+    /** Synchronous: calls AI service via HTTP, blocks until result. */
     AiRecommendationRunDetailDTO generateRecommendation(Long episodeId, TriggerType triggerType);
+
+    /** Async: publishes to RabbitMQ, returns immediately with PROCESSING run. */
+    AiRecommendationRunDetailDTO generateRecommendationAsync(Long episodeId, TriggerType triggerType);
 
     AiRecommendationRunDetailDTO getRunDetail(Long runId);
 

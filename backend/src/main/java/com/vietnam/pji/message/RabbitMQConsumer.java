@@ -1,55 +1,177 @@
 package com.vietnam.pji.message;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vietnam.pji.config.integration.RabbitMQConfig;
-import com.vietnam.pji.constant.RunStatus;
-import com.vietnam.pji.constant.TriggerType;
-import com.vietnam.pji.dto.request.RabbitMQRecommendationMessage;
-import com.vietnam.pji.model.agentic.AiRecommendationRun;
-import com.vietnam.pji.repository.AiRecommendationRunRepository;
-import com.vietnam.pji.services.AiRecommendationService;
+import com.vietnam.pji.constant.*;
+import com.vietnam.pji.dto.response.RabbitMQRecommendationResultMessage;
+import com.vietnam.pji.exception.ResourceNotFoundException;
+import com.vietnam.pji.model.agentic.*;
+import com.vietnam.pji.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
+import java.util.*;
 
+/**
+ * Consumes AI processing results from the RabbitMQ result queue.
+ * The Python RAG worker publishes results here after processing.
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class RabbitMQConsumer {
 
-    private final AiRecommendationService aiRecommendationService;
     private final AiRecommendationRunRepository runRepository;
+    private final AiRecommendationItemRepository itemRepository;
+    private final AiRagCitationRepository citationRepository;
+    private final ObjectMapper objectMapper;
 
-    @RabbitListener(queues = RabbitMQConfig.RECOMMENDATION_QUEUE)
-    public void handleRecommendationJob(RabbitMQRecommendationMessage message) {
-        log.info("Received recommendation job: requestId={}, episodeId={}, triggerType={}",
-                message.getRequestId(), message.getEpisodeId(), message.getTriggerType());
+    @RabbitListener(queues = RabbitMQConfig.RECOMMENDATION_RESULT_QUEUE)
+    @Transactional
+    public void handleRecommendationResult(RabbitMQRecommendationResultMessage result) {
+        String requestId = result.getRequestId();
+        Long runId = result.getRunId();
 
-        // Idempotency check
-        if (message.getRunId() != null) {
-            Optional<AiRecommendationRun> existingRun = runRepository.findById(message.getRunId());
-            if (existingRun.isPresent() && existingRun.get().getStatus() == RunStatus.SUCCESS) {
-                log.info("Run {} already SUCCESS, skipping duplicate message", message.getRunId());
-                return;
-            }
+        log.info("Received AI result from queue: requestId={}, runId={}, status={}",
+                requestId, runId, result.getStatus());
+
+        // Find the run — by runId first, fallback to requestId
+        AiRecommendationRun run = null;
+        if (runId != null) {
+            run = runRepository.findById(runId).orElse(null);
         }
-
-        // Check by requestId
-        if (message.getRequestId() != null
-                && runRepository.existsByRequestIdAndStatus(message.getRequestId(), RunStatus.SUCCESS)) {
-            log.info("Request {} already SUCCESS, skipping duplicate message", message.getRequestId());
+        if (run == null && requestId != null) {
+            run = runRepository.findByRequestId(requestId).orElse(null);
+        }
+        if (run == null) {
+            log.error("Cannot find run for result: runId={}, requestId={}", runId, requestId);
             return;
         }
 
+        // Idempotency: skip if already succeeded
+        if (run.getStatus() == RunStatus.SUCCESS) {
+            log.info("Run {} already SUCCESS, skipping duplicate result", run.getId());
+            return;
+        }
+
+        // Handle FAILED status
+        if ("FAILED".equals(result.getStatus())) {
+            run.setStatus(RunStatus.FAILED);
+            run.setErrorMessage(result.getErrorMessage() != null
+                    ? result.getErrorMessage().substring(0, Math.min(result.getErrorMessage().length(), 2000))
+                    : "AI processing failed");
+            run.setLatencyMs(result.getLatencyMs());
+            runRepository.save(run);
+            log.warn("AI processing failed for runId={}: {}", run.getId(), result.getErrorMessage());
+            return;
+        }
+
+        // Validate response has items
+        if (result.getItems() == null || result.getItems().isEmpty()) {
+            run.setStatus(RunStatus.FAILED);
+            run.setErrorMessage("AI response missing required items");
+            runRepository.save(run);
+            log.warn("AI result has no items for runId={}", run.getId());
+            return;
+        }
+
+        // Update run with AI results
+        run.setStatus("SUCCESS".equals(result.getStatus()) ? RunStatus.SUCCESS : RunStatus.PARTIAL);
+        run.setLatencyMs(result.getLatencyMs());
+
+        if (result.getModel() != null) {
+            run.setModelName(result.getModel().getName());
+            run.setModelVersion(result.getModel().getVersion());
+        }
+
         try {
-            TriggerType triggerType = TriggerType.valueOf(message.getTriggerType());
-            aiRecommendationService.generateRecommendation(message.getEpisodeId(), triggerType);
-            log.info("Background recommendation completed for episodeId={}", message.getEpisodeId());
+            if (result.getAssessmentJson() != null) {
+                run.setAssessmentJson(objectMapper.writeValueAsString(result.getAssessmentJson()));
+            }
+            if (result.getExplanationJson() != null) {
+                run.setExplanationJson(objectMapper.writeValueAsString(result.getExplanationJson()));
+            }
+            if (result.getWarningsJson() != null) {
+                run.setWarningsJson(objectMapper.writeValueAsString(result.getWarningsJson()));
+            }
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to serialize AI result JSON fields for runId={}", run.getId(), e);
+        }
+
+        runRepository.save(run);
+
+        // Save items
+        Map<String, AiRecommendationItem> itemKeyMap = new HashMap<>();
+
+        for (RabbitMQRecommendationResultMessage.ItemDTO itemDTO : result.getItems()) {
+            AiRecommendationItem item = AiRecommendationItem.builder()
+                    .run(run)
+                    .category(parseCategory(itemDTO.getCategory()))
+                    .title(itemDTO.getTitle())
+                    .priorityOrder(itemDTO.getPriorityOrder())
+                    .isPrimary(itemDTO.getIsPrimary())
+                    .build();
+
+            try {
+                if (itemDTO.getItemJson() != null) {
+                    item.setItemJson(objectMapper.writeValueAsString(itemDTO.getItemJson()));
+                }
+            } catch (JsonProcessingException e) {
+                log.warn("Failed to serialize item_json for category={}", itemDTO.getCategory());
+            }
+
+            AiRecommendationItem saved = itemRepository.save(item);
+            if (itemDTO.getClientItemKey() != null) {
+                itemKeyMap.put(itemDTO.getClientItemKey(), saved);
+            }
+        }
+
+        // Save citations
+        if (result.getCitations() != null) {
+            for (RabbitMQRecommendationResultMessage.CitationDTO citDTO : result.getCitations()) {
+                AiRagCitation citation = AiRagCitation.builder()
+                        .run(run)
+                        .sourceType(parseSourceType(citDTO.getSourceType()))
+                        .sourceTitle(citDTO.getSourceTitle())
+                        .sourceUri(citDTO.getSourceUri())
+                        .snippet(citDTO.getSnippet())
+                        .relevanceScore(citDTO.getRelevanceScore())
+                        .citedFor(citDTO.getCitedFor())
+                        .build();
+
+                if (citDTO.getClientItemKey() != null && itemKeyMap.containsKey(citDTO.getClientItemKey())) {
+                    citation.setItem(itemKeyMap.get(citDTO.getClientItemKey()));
+                }
+
+                citationRepository.save(citation);
+            }
+        }
+
+        log.info("Successfully saved AI result for runId={}: {} items, {} citations",
+                run.getId(),
+                result.getItems().size(),
+                result.getCitations() != null ? result.getCitations().size() : 0);
+    }
+
+    private ItemCategory parseCategory(String category) {
+        try {
+            return ItemCategory.valueOf(category);
         } catch (Exception e) {
-            log.error("Background recommendation failed for episodeId={}", message.getEpisodeId(), e);
-            throw e; // Let RabbitMQ handle retry/DLQ
+            log.warn("Unknown item category: {}", category);
+            return ItemCategory.DIAGNOSTIC_TEST;
+        }
+    }
+
+    private SourceType parseSourceType(String sourceType) {
+        try {
+            return SourceType.valueOf(sourceType);
+        } catch (Exception e) {
+            log.warn("Unknown source type: {}", sourceType);
+            return SourceType.GUIDELINE;
         }
     }
 }

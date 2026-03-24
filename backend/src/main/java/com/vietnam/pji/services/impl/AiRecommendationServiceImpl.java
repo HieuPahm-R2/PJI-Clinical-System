@@ -11,6 +11,8 @@ import com.vietnam.pji.exception.ResourceNotFoundException;
 import com.vietnam.pji.model.agentic.*;
 import com.vietnam.pji.model.medical.PjiEpisode;
 import com.vietnam.pji.repository.*;
+import com.vietnam.pji.dto.request.RabbitMQRecommendationMessage;
+import com.vietnam.pji.message.RabbitMQPublisher;
 import com.vietnam.pji.services.AiRecommendationService;
 import com.vietnam.pji.services.AiServiceClient;
 import com.vietnam.pji.services.EpisodeSnapshotAssemblerService;
@@ -35,6 +37,7 @@ public class AiRecommendationServiceImpl implements AiRecommendationService {
     private final AiRagCitationRepository citationRepository;
     private final EpisodeSnapshotAssemblerService snapshotAssemblerService;
     private final AiServiceClient aiServiceClient;
+    private final RabbitMQPublisher rabbitMQPublisher;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -71,6 +74,40 @@ public class AiRecommendationServiceImpl implements AiRecommendationService {
 
         // TX2: Save results
         return saveAiResults(run.getId(), aiResponse);
+    }
+
+    @Override
+    public AiRecommendationRunDetailDTO generateRecommendationAsync(Long episodeId, TriggerType triggerType) {
+        PjiEpisode episode = episodeRepository.findById(episodeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Episode not found: " + episodeId));
+
+        // Build snapshot + create run (same as sync)
+        SnapshotBuildResult buildResult = snapshotAssemblerService.buildSnapshot(episodeId);
+        CaseClinicalSnapshot snapshot = createSnapshot(episode, buildResult);
+        AiRecommendationRun run = createRun(episode, snapshot, triggerType);
+
+        // Publish to RabbitMQ — Python worker will process asynchronously
+        RabbitMQRecommendationMessage message = RabbitMQRecommendationMessage.builder()
+                .requestId(run.getRequestId())
+                .runId(run.getId())
+                .episodeId(episodeId)
+                .snapshotId(snapshot.getId())
+                .triggerType(triggerType.name())
+                .snapshotDataJson(buildResult.getSnapshotDataJson())
+                .options(Map.of("language", "vi", "include_citations", true, "top_k", 5))
+                .build();
+
+        rabbitMQPublisher.publishRecommendationJob(message);
+
+        log.info("Published async recommendation job: requestId={}, runId={}, episodeId={}",
+                run.getRequestId(), run.getId(), episodeId);
+
+        // Return immediately with PROCESSING status — client polls GET /runs/{runId}
+        return AiRecommendationRunDetailDTO.builder()
+                .run(run)
+                .items(Collections.emptyList())
+                .citations(Collections.emptyList())
+                .build();
     }
 
     @Transactional

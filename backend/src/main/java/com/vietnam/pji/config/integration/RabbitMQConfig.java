@@ -11,16 +11,37 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RabbitMQConfig {
 
+    // --- Exchange ---
     public static final String EXCHANGE = "pji.ai.exchange";
+
+    // --- Recommendation (Backend → Python) ---
     public static final String RECOMMENDATION_QUEUE = "pji.ai.recommendation.queue";
     public static final String RECOMMENDATION_DLQ = "pji.ai.recommendation.dlq";
     public static final String ROUTING_KEY_GENERATE = "ai.recommendation.generate";
     public static final String ROUTING_KEY_REFRESH = "ai.recommendation.refresh";
 
+    // --- Recommendation Result (Python → Backend) ---
+    public static final String RECOMMENDATION_RESULT_QUEUE = "pji.ai.recommendation.result.queue";
+    public static final String ROUTING_KEY_RESULT = "ai.recommendation.result";
+
+    // --- Chat (Backend → Python) ---
+    public static final String CHAT_QUEUE = "pji.ai.chat.queue";
+    public static final String CHAT_RESULT_QUEUE = "pji.ai.chat.result.queue";
+    public static final String ROUTING_KEY_CHAT = "ai.chat.request";
+    public static final String ROUTING_KEY_CHAT_RESULT = "ai.chat.result";
+
+    // =====================================================================
+    // Exchange
+    // =====================================================================
+
     @Bean
     public TopicExchange aiExchange() {
         return new TopicExchange(EXCHANGE);
     }
+
+    // =====================================================================
+    // Recommendation queues & bindings
+    // =====================================================================
 
     @Bean
     public Queue recommendationQueue() {
@@ -36,6 +57,11 @@ public class RabbitMQConfig {
     }
 
     @Bean
+    public Queue recommendationResultQueue() {
+        return QueueBuilder.durable(RECOMMENDATION_RESULT_QUEUE).build();
+    }
+
+    @Bean
     public Binding generateBinding(Queue recommendationQueue, TopicExchange aiExchange) {
         return BindingBuilder.bind(recommendationQueue)
                 .to(aiExchange)
@@ -48,6 +74,48 @@ public class RabbitMQConfig {
                 .to(aiExchange)
                 .with(ROUTING_KEY_REFRESH);
     }
+
+    @Bean
+    public Binding resultBinding(Queue recommendationResultQueue, TopicExchange aiExchange) {
+        return BindingBuilder.bind(recommendationResultQueue)
+                .to(aiExchange)
+                .with(ROUTING_KEY_RESULT);
+    }
+
+    // =====================================================================
+    // Chat queues & bindings
+    // =====================================================================
+
+    @Bean
+    public Queue chatQueue() {
+        return QueueBuilder.durable(CHAT_QUEUE)
+                .withArgument("x-dead-letter-exchange", "")
+                .withArgument("x-dead-letter-routing-key", RECOMMENDATION_DLQ)
+                .build();
+    }
+
+    @Bean
+    public Queue chatResultQueue() {
+        return QueueBuilder.durable(CHAT_RESULT_QUEUE).build();
+    }
+
+    @Bean
+    public Binding chatBinding(Queue chatQueue, TopicExchange aiExchange) {
+        return BindingBuilder.bind(chatQueue)
+                .to(aiExchange)
+                .with(ROUTING_KEY_CHAT);
+    }
+
+    @Bean
+    public Binding chatResultBinding(Queue chatResultQueue, TopicExchange aiExchange) {
+        return BindingBuilder.bind(chatResultQueue)
+                .to(aiExchange)
+                .with(ROUTING_KEY_CHAT_RESULT);
+    }
+
+    // =====================================================================
+    // Message converter & template
+    // =====================================================================
 
     @Bean
     public MessageConverter jsonMessageConverter() {

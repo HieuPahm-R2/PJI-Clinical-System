@@ -17,11 +17,9 @@ public class EpisodeRequestDTO {
 
     @NotNull(message = "admissionDate must not be null")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-    @JsonFormat(pattern = "dd-MM-yyyy")
     private LocalDate admissionDate;
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-    @JsonFormat(pattern = "dd-MM-yyyy")
     private LocalDate dischargeDate;
 
     private Integer treatmentDays;
