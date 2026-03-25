@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "mcp__gitlab-kg__list_projects",
+      "mcp__gitlab-kg__repo_map",
+      "mcp__gitlab-kg__index_project",
+      "mcp__gitlab-kg__search_codebase_definitions"
+    ]
+  }
+}

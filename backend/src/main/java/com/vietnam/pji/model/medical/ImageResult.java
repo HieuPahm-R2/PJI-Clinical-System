@@ -6,7 +6,6 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
-
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.Date;
@@ -26,14 +25,11 @@ public class ImageResult implements Serializable {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "episode_id")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private PjiEpisode episode;
 
     @Column(name = "type", length = 50)
     private String type;
-
-    @Column(name = "imaging_date")
-    private LocalDate imagingDate;
 
     @Column(name = "findings", columnDefinition = "TEXT")
     private String findings;

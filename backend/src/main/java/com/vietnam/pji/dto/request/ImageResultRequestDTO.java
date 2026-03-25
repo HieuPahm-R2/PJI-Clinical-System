@@ -17,10 +17,6 @@ public class ImageResultRequestDTO {
 
     private String type;
 
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate imagingDate;
-
     private String findings;
 
     private String fileMetadata;

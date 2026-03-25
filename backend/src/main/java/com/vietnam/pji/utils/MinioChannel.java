@@ -18,7 +18,7 @@ import java.util.Objects;
 @Component
 @RequiredArgsConstructor
 public class MinioChannel {
-//    private static final String BUCKET = "resources";
+    // private static final String BUCKET = "resources";
     private final MinioClient minioClient;
 
     public void initBucket(String bucket) {
@@ -31,15 +31,13 @@ public class MinioChannel {
         final var found = minioClient.bucketExists(
                 BucketExistsArgs.builder()
                         .bucket(name)
-                        .build()
-        );
+                        .build());
         if (!found) {
             // Tạo bucket nếu chưa tồn tại
             minioClient.makeBucket(
                     MakeBucketArgs.builder()
                             .bucket(name)
-                            .build()
-            );
+                            .build());
 
             // Thiết lập bucket là public bằng cách set policy
             final var policy = """
@@ -56,8 +54,7 @@ public class MinioChannel {
                         }
                     """.formatted(name);
             minioClient.setBucketPolicy(
-                    SetBucketPolicyArgs.builder().bucket(name).config(policy).build()
-            );
+                    SetBucketPolicyArgs.builder().bucket(name).config(policy).build());
         } else {
             log.info("Bucket %s đã tồn tại.".formatted(name));
         }
@@ -66,16 +63,16 @@ public class MinioChannel {
     @SneakyThrows
     public String upload(@NonNull final MultipartFile file, String BUCKET) {
         log.info("Bucket: {}, file size: {}", BUCKET, file.getSize());
-        final var fileName = file.getOriginalFilename();
+        final var fileName = System.currentTimeMillis() + "-" + file.getOriginalFilename();
         try {
             minioClient.putObject(
                     PutObjectArgs.builder()
                             .bucket(BUCKET)
                             .object(fileName)
-                            .contentType(Objects.isNull(file.getContentType()) ? "image/png; image/jpg;" : file.getContentType())
+                            .contentType(Objects.isNull(file.getContentType()) ? "image/png; image/jpg;"
+                                    : file.getContentType())
                             .stream(file.getInputStream(), file.getSize(), -1)
-                            .build()
-            );
+                            .build());
         } catch (Exception ex) {
             log.error("Error saving image \n {} ", ex.getMessage());
             throw new BusinessException("400", "Unable to upload file", ex);
@@ -85,8 +82,7 @@ public class MinioChannel {
                         .method(io.minio.http.Method.GET)
                         .bucket(BUCKET)
                         .object(fileName)
-                        .build()
-        );
+                        .build());
     }
 
     public byte[] download(String bucket, String name) {
