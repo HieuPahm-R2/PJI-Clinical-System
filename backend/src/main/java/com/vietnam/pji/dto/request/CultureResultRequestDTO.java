@@ -13,8 +13,6 @@ public class CultureResultRequestDTO {
     @NotNull(message = "episodeId must not be null")
     private Long episodeId;
 
-    private String sampleType;
-
     private Integer incubationDays;
 
     private String name;
@@ -22,6 +20,10 @@ public class CultureResultRequestDTO {
     private String result;
 
     private String gramType;
+
+    private Boolean antibioticed;
+
+    private Integer daysOffAntibio;
 
     private String notes;
 }

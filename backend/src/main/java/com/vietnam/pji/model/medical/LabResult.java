@@ -70,10 +70,6 @@ public class LabResult extends AbstractEntity<Long> implements Serializable {
     @Column(name = "alpha_defensin", columnDefinition = "jsonb")
     private Measurement alphaDefensin;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "egfr", columnDefinition = "jsonb")
-    private Measurement egfr;
-
     // Chỉ số dịch khớp
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "crp", columnDefinition = "jsonb")

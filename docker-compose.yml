@@ -23,20 +23,19 @@ services:
     networks:
       - todo-network
     restart: always
-
-  nginx-proxy-manager:
-    image: jc21/nginx-proxy-manager:2.14.0
-    container_name: nginx-proxy-manager
-    ports:
-      - "80:80"
-      - "81:81"
-      - "443:443"
-    volumes:
-      - ./nginx/data:/data
-      - ./nginx/letsencrypt:/etc/letsencrypt
-    networks:
-      - todo-network
-    restart: always
+  # nginx-proxy-manager:
+  #   image: jc21/nginx-proxy-manager:2.14.0
+  #   container_name: nginx-proxy-manager
+  #   ports:
+  #     - "80:80"
+  #     - "81:81"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx/data:/data
+  #     - ./nginx/letsencrypt:/etc/letsencrypt
+  #   networks:
+  #     - todo-network
+  #   restart: always
 
 networks:
   todo-network:

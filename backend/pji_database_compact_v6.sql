@@ -45,6 +45,22 @@ DO $$ BEGIN
     CREATE TYPE treatment_plan_status AS ENUM ('DRAFT', 'CONFIRMED', 'SUPERSEDED', 'CANCELLED');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
+-- Migration: Convert direct column from custom enum type to VARCHAR
+-- This handles cases where the database was created with direct_enum AS ENUM type
+DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'pji_episodes') THEN
+        -- If direct column exists and is of type direct_enum, convert it to VARCHAR
+        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'pji_episodes' AND column_name = 'direct') THEN
+            BEGIN
+                ALTER TABLE pji_episodes ALTER COLUMN direct TYPE VARCHAR(50) USING direct::text;
+            EXCEPTION WHEN OTHERS THEN
+                -- Column might already be VARCHAR, ignore error
+                NULL;
+            END;
+        END IF;
+    END IF;
+END $$;
+
 -- ==========================================
 -- 2. USERS / RBAC (minimal)
 -- ==========================================

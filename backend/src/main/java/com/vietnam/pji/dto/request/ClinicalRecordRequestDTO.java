@@ -17,7 +17,7 @@ public class ClinicalRecordRequestDTO {
     private Long episodeId;
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-    @JsonFormat(pattern = "dd-MM-yyyy")
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate illnessOnsetDate;
 
     private String bloodPressure;

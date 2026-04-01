@@ -24,9 +24,6 @@ public class CultureResult extends AbstractEntity<Long> implements Serializable 
     @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private PjiEpisode episode;
 
-    @Column(name = "sample_type", length = 100)
-    private String sampleType;
-
     @Column(name = "incubation_days")
     private Integer incubationDays;
 
@@ -37,6 +34,11 @@ public class CultureResult extends AbstractEntity<Long> implements Serializable 
     @Column(name = "result_status", columnDefinition = "sample_result_status")
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private CultureStatus result;
+
+    private Boolean antibioticed;
+
+    @Column(name = "days_off_antibio")
+    private Integer daysOffAntibio;
 
     @Column(name = "gram_type", length = 20)
     private String gramType;

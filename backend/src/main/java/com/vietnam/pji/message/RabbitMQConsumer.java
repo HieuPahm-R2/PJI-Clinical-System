@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vietnam.pji.config.integration.RabbitMQConfig;
 import com.vietnam.pji.constant.*;
 import com.vietnam.pji.dto.response.RabbitMQRecommendationResultMessage;
-import com.vietnam.pji.exception.ResourceNotFoundException;
 import com.vietnam.pji.model.agentic.*;
 import com.vietnam.pji.repository.*;
 import lombok.RequiredArgsConstructor;

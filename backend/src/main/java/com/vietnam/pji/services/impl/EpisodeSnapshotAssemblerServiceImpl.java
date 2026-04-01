@@ -214,7 +214,6 @@ public class EpisodeSnapshotAssemblerServiceImpl implements EpisodeSnapshotAssem
             for (CultureResult c : cultures) {
                 Map<String, Object> item = new LinkedHashMap<>();
                 item.put("culture_id", c.getId());
-                item.put("sample_type", c.getSampleType());
                 item.put("organism_name", c.getName());
                 item.put("result_status", c.getResult());
                 item.put("gram_type", c.getGramType());
