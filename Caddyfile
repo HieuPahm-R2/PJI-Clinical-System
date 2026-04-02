@@ -1,0 +1,155 @@
+# Reverse proxy + auto SSL + security headers
+
+# Usage:
+#   Development:  DOMAIN=localhost docker compose up caddy
+#   Production:   DOMAIN=pji-advisor.example.com docker compose up caddy
+
+
+# Global options
+
+{
+	# Email cho Let's Encrypt notifications
+	email {$ACME_EMAIL:admin@example.com}
+
+	# Development: uncomment dòng dưới để dùng self-signed cert
+	# local_certs
+
+	# Log format
+	log {
+		output stdout
+		format console
+		level INFO
+	}
+}
+
+# ------------
+# Main site: {$DOMAIN}
+
+{$DOMAIN:localhost} {
+
+	# Security Headers (áp dụng cho tất cả response)
+
+	header {
+		# Chống XSS, clickjacking, MIME sniffing
+		X-Content-Type-Options    "nosniff"
+		X-Frame-Options           "SAMEORIGIN"
+		X-XSS-Protection          "1; mode=block"
+		Referrer-Policy            "strict-origin-when-cross-origin"
+		Permissions-Policy         "camera=(), microphone=(), geolocation=()"
+
+		# HSTS - Buộc browser dùng HTTPS (bật sau khi confirm SSL hoạt động)
+		# Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+
+		# Ẩn thông tin server
+		-Server
+		-X-Powered-By
+	}
+
+	# -----------------------------------------------------------------------
+	# Logging
+
+	log {
+		output stdout
+		format json
+		level INFO
+	}
+
+	# --------
+	# API Backend: /api/* → Spring Boot (port 8085)
+
+	handle /api/* {
+		# Rate limiting - 100 requests/phút per IP
+		rate_limit {
+			zone api_zone {
+				key    {remote_host}
+				events 100
+				window 1m
+			}
+		}
+
+		# Reverse proxy đến backend
+		reverse_proxy pji-backend:8085 {
+			# Health check - Caddy tự động skip backend nếu unhealthy
+			health_uri      /actuator/health
+			health_interval 15s
+			health_timeout  5s
+			health_status   200
+
+			# Timeout cho request
+			transport http {
+				dial_timeout     5s
+				response_timeout 120s    # RAG queries có thể mất lâu
+				read_timeout     120s
+			}
+
+			# Headers cho backend biết request gốc
+			header_up X-Real-IP          {remote_host}
+			header_up X-Forwarded-For    {remote_host}
+			header_up X-Forwarded-Proto  {scheme}
+			header_up X-Request-ID       {http.request.uuid}
+		}
+	}
+
+
+	# WebSocket: /ws/* → Backend (cho real-time streaming response)
+
+	handle /ws/* {
+		reverse_proxy pji-backend:8085 {
+			transport http {
+				# WebSocket cần timeout dài hơn
+				dial_timeout     5s
+				response_timeout 0    # Không timeout cho WebSocket
+			}
+		}
+	}
+
+	# Grafana Dashboard: /grafana/* → Grafana (port 3000)
+	# Chỉ cho phép internal IP hoặc VPN access
+
+	handle /grafana/* {
+		# Restrict access - uncomment và sửa IP range phù hợp
+		# @blocked not remote_ip 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
+		# respond @blocked 403
+
+		reverse_proxy grafana:3000
+	}
+
+
+	# Frontend SPA: Tất cả routes còn lại → React app
+	# -----------------------------------------------------------------------
+	handle {
+		reverse_proxy pji-frontend:3000 {
+			health_uri      /
+			health_interval 30s
+			health_timeout  5s
+		}
+	}
+
+
+	# Compression - Giảm bandwidth
+	# -----------------------------------------------------------------------
+	encode {
+		gzip
+		zstd
+	}
+}
+
+
+# (Optional) RabbitMQ Management UI - Internal only
+# Truy cập qua subdomain riêng, cần basic auth
+# ------------------------------------------
+# rabbitmq.{$DOMAIN:localhost} {
+# 	basicauth {
+# 		admin $2a$14$HASHED_PASSWORD_HERE
+# 	}
+# 	reverse_proxy rabbitmq:15672
+# }
+
+# MinIO Console - Internal only
+# ---------------------------------
+# minio.{$DOMAIN:localhost} {
+# 	basicauth {
+# 		admin $2a$14$HASHED_PASSWORD_HERE
+# 	}
+# 	reverse_proxy minio:9001
+# }

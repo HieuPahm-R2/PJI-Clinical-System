@@ -76,3 +76,6 @@ volumes:
 networks:
   pji-network:
     driver: bridge
+
+## Test tại local
+# docker compose -f docker-buildlocal.yml -p 108pji-advisor up -d

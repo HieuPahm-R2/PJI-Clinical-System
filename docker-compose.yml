@@ -1,42 +1,479 @@
+# PJI Advisor - Docker Compose
+# Hệ thống hỗ trợ chẩn đoán & gợi ý phác đồ
+
+# Usage:
+#   cp .env.example .env         # Tạo file env và điền secrets
+#   docker compose up -d         # Khởi chạy toàn bộ stack
+#   docker compose logs -f       # Xem logs
+#   docker compose down          # Dừng tất cả
+
 services:
-  backend:
-    build: ./app/backend
-    container_name: todo-backend
-    env_file:
-      - ./app/backend/.env
+
+  # ===========================================================================
+  # REVERSE PROXY - Caddy
+  # Entry point duy nhất, tự động SSL via Let's Encrypt
+  caddy:
+    image: caddy:2-alpine
+    container_name: pji-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp" # HTTP/3
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data # SSL certificates
+      - caddy_config:/config
+    networks:
+      - frontend-net
+    depends_on:
+      pji-frontend:
+        condition: service_healthy
+      pji-backend:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "caddy", "version" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ===========================================================================
+  # FRONTEND - React/TypeScript SPA
+  # ===========================================================================
+  pji-frontend:
+    image: ${DOCKERHUB_REPO:-local}/pji-frontend:${IMAGE_TAG:-latest}
+    container_name: pji-frontend
+    restart: unless-stopped
+    networks:
+      - frontend-net
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5173" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+
+  # BACKEND - Spring Boot (Java)
+  pji-backend:
+    image: ${DOCKERHUB_REPO:-local}/pji-backend:${IMAGE_TAG:-latest}
+    container_name: pji-backend
+    restart: unless-stopped
+    # Port 8085 chỉ expose nội bộ, Caddy proxy vào
+    expose:
+      - "8085"
+    environment:
+      # Spring profiles
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+
+      # Database
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-pji_advisor}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-pji_user}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Postgres password required}
+
+      # Redis
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+
+      # RabbitMQ
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-pji_user}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:?RabbitMQ password required}
+
+      # MinIO
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?MinIO access key required}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?MinIO secret key required}
+      MINIO_BUCKET: ${MINIO_BUCKET:-pji-documents}
+
+      # OpenTelemetry
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: pji-backend
+      OTEL_RESOURCE_ATTRIBUTES: "service.version=${IMAGE_TAG:-latest},deployment.environment=${SPRING_PROFILES_ACTIVE:-prod}"
+
+      # JVM options
+      JAVA_OPTS: >-
+        -Xms512m -Xmx1024m -XX:+UseG1GC -javaagent:/app/opentelemetry-javaagent.jar
+    networks:
+      - frontend-net
+      - backend-net
+      - monitoring-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-sf", "http://localhost:8085/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s # Spring Boot cần thời gian khởi động
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
+          cpus: '2.0'
+
+  # RAG SERVICE - FastAPI Gateway (aio-pika + LightRAG)
+  pji-rag-service:
+    image: ${DOCKERHUB_REPO:-local}/pji-rag-service:${IMAGE_TAG:-latest}
+    container_name: pji-rag-service
+    restart: unless-stopped
     expose:
       - "8000"
-    networks:
-      - todo-network
-    restart: always
+    environment:
+      # RabbitMQ
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-pji_user}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+      RABBITMQ_QUEUE_REQUEST: rag.request
+      RABBITMQ_QUEUE_RESPONSE: rag.response
 
-  frontend:
-    build:
-      context: ./app/frontend
-      args:
-        REACT_APP_API_URL: /api
-    container_name: todo-frontend
-    expose:
-      - "80"
+      # LLM - Qwen (self-hosted hoặc API)
+      LLM_MODEL_NAME: ${LLM_MODEL_NAME:-qwen2.5-7b-instruct}
+      LLM_API_URL: ${LLM_API_URL:-http://localhost:11434/v1} # Ollama endpoint nếu self-host
+      LLM_API_KEY: ${LLM_API_KEY:-}
+
+      # Hugging Face - Entity extraction
+      HF_TOKEN: ${HF_TOKEN:-}
+      HF_MODEL_ENTITY: ${HF_MODEL_ENTITY:-}
+
+      # Jina - Embeddings & Reranking
+      JINA_API_KEY: ${JINA_API_KEY:-}
+      JINA_EMBED_MODEL: jina-embeddings-v3
+      JINA_RERANK_MODEL: jina-reranker-v2
+
+      # LightRAG
+      LIGHTRAG_WORKING_DIR: /app/data/lightrag
+      LIGHTRAG_CHUNK_SIZE: 1200
+      LIGHTRAG_CHUNK_OVERLAP: 200
+
+      # OpenTelemetry
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: pji-rag-service
+
+      # Pydantic strict validation
+      PYDANTIC_STRICT: "true"
+    volumes:
+      - rag_data:/app/data # LightRAG index, vector store
+      - pdf_guidelines:/app/data/guidelines # PDF phác đồ y tế
+    networks:
+      - backend-net
+      - rag-net
+      - monitoring-net
     depends_on:
-      - backend
-    networks:
-      - todo-network
-    restart: always
-  # nginx-proxy-manager:
-  #   image: jc21/nginx-proxy-manager:2.14.0
-  #   container_name: nginx-proxy-manager
-  #   ports:
-  #     - "80:80"
-  #     - "81:81"
-  #     - "443:443"
-  #   volumes:
-  #     - ./nginx/data:/data
-  #     - ./nginx/letsencrypt:/etc/letsencrypt
-  #   networks:
-  #     - todo-network
-  #   restart: always
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-sf", "http://localhost:8000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 4G # RAG + embeddings cần nhiều RAM
+          cpus: '4.0'
 
+  # DATABASE - PostgreSQL
+  postgres:
+    image: postgres:16-alpine
+    container_name: pji-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-pji_advisor}
+      POSTGRES_USER: ${POSTGRES_USER:-pji_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Postgres password required}
+      # Performance tuning
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d:ro # SQL init scripts
+    networks:
+      - backend-net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pji_user} -d ${POSTGRES_DB:-pji_advisor}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '2.0'
+    # QUAN TRỌNG: Cấu hình thêm cho production
+    command: >
+      postgres
+        -c shared_buffers=256MB
+        -c effective_cache_size=768MB
+        -c work_mem=4MB
+        -c maintenance_work_mem=128MB
+        -c max_connections=100
+        -c log_min_duration_statement=1000
+
+  # CACHE - Redis
+  redis:
+    image: redis:7-alpine
+    container_name: pji-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+        --maxmemory 256mb
+        --maxmemory-policy allkeys-lru
+        --appendonly yes
+        --appendfsync everysec
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend-net
+    healthcheck:
+      test: [ "CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MESSAGE BROKER - RabbitMQ
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: pji-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-pji_user}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?RabbitMQ password required}
+      RABBITMQ_DEFAULT_VHOST: /
+      # Erlang cookie cho clustering sau này
+      RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE:-pji-secret-cookie}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    ports:
+      # Management UI - chỉ expose khi dev/debug, production nên bỏ
+      - "${RABBITMQ_MGMT_PORT:-15672}:15672"
+    networks:
+      - backend-net
+      - rag-net
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # OBJECT STORAGE - MinIO (lưu PDF guidelines, file uploads)
+  minio:
+    image: minio/minio:latest
+    container_name: pji-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:?MinIO access key required}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:?MinIO secret key required}
+    volumes:
+      - minio_data:/data
+    ports:
+      # Console UI - tương tự RabbitMQ, production nên restrict
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    networks:
+      - backend-net
+    healthcheck:
+      test: [ "CMD", "mc", "ready", "local" ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+
+  # ===========================================================================
+  # MONITORING - OpenTelemetry Collector
+  # Trung tâm thu thập traces, metrics, logs rồi fan-out
+  # ===========================================================================
+  otel-collector:
+    image: otel/opentelemetry-collector:0.142.0
+    container_name: pji-otel-collector
+    restart: unless-stopped
+    command: [ "--config=/etc/otel/config.yml" ]
+    volumes:
+      - ./docker/otelcollector/config.yml:/etc/otel/config.yml:ro
+    expose:
+      - "4317" # gRPC receiver (cho các services gửi data vào)
+      - "4318" # HTTP receiver
+      - "8889" # Prometheus metrics endpoint (cho Prometheus scrape)
+    networks:
+      - monitoring-net
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:13133" ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+
+  # ===========================================================================
+  # MONITORING - Jaeger (Distributed Tracing)
+  # ===========================================================================
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: pji-jaeger
+    restart: unless-stopped
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      # Jaeger UI - restrict access trong production
+      - "${JAEGER_UI_PORT:-16686}:16686"
+    networks:
+      - monitoring-net
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+
+  # ===========================================================================
+  # MONITORING - Prometheus (Metrics)
+  # ===========================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: pji-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle' # Cho phép reload config qua API
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - monitoring-net
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy" ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+
+  # ===========================================================================
+  # MONITORING - Loki (Log Aggregation)
+  # ===========================================================================
+  loki:
+    image: grafana/loki:latest
+    container_name: pji-loki
+    restart: unless-stopped
+    command: -config.file=/etc/loki/config.yaml
+    volumes:
+      - ./loki/config.yaml:/etc/loki/config.yaml:ro
+      - loki_data:/loki
+    networks:
+      - monitoring-net
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3100/ready" ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+
+  # ===========================================================================
+  # MONITORING - Promtail (Log shipper → Loki)
+  # Thu logs từ tất cả containers gửi về Loki
+  # ===========================================================================
+  promtail:
+    image: grafana/promtail:latest
+    container_name: pji-promtail
+    restart: unless-stopped
+    volumes:
+      - ./promtail/config.yaml:/etc/promtail/config.yaml:ro
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    networks:
+      - monitoring-net
+    depends_on:
+      - loki
+
+  # ===========================================================================
+  # MONITORING - Grafana (Dashboard & Visualization)
+  # ===========================================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: pji-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Grafana password required}
+      GF_SERVER_ROOT_URL: https://${DOMAIN:-localhost}/grafana
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro # Auto-provision datasources
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - monitoring-net
+      - frontend-net # Caddy proxy vào Grafana UI
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health" ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+
+# =============================================================================
+# NETWORKS - Phân tách để tăng security
+# =============================================================================
 networks:
-  todo-network:
-    external: true
+  # Frontend: Caddy ↔ Frontend SPA ↔ Backend API ↔ Grafana UI
+  frontend-net:
+    driver: bridge
+
+  # Backend: Backend ↔ PostgreSQL ↔ Redis ↔ MinIO ↔ RabbitMQ
+  backend-net:
+    driver: bridge
+
+  # RAG: RAG Service ↔ RabbitMQ
+  rag-net:
+    driver: bridge
+
+  # Monitoring: OTel Collector ↔ Jaeger ↔ Prometheus ↔ Loki ↔ Grafana
+  monitoring-net:
+    driver: bridge
+
+# =============================================================================
+# VOLUMES - Persistent data
+# =============================================================================
+volumes:
+  caddy_data:
+  caddy_config:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+  minio_data:
+  rag_data:
+  pdf_guidelines:
+  prometheus_data:
+  loki_data:
+  grafana_data:
