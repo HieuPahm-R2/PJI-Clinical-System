@@ -37,7 +37,9 @@ public class DatabaseInitializer implements CommandLineRunner {
 
                 if (countPermission == 0) {
                         ArrayList<Permission> arrResult = new ArrayList<>();
-
+                        // RAG_Services
+                        arrResult.add(new Permission("Get recommendation",
+                                        "/api/v1/episodes/{episodeId}/ai-recommendations/generate", "POST", "RAG"));
                         // PATIENTS
                         arrResult.add(new Permission("Create a patient", "/api/v1/patients", "POST", "PATIENTS"));
                         arrResult.add(new Permission("Update a patient", "/api/v1/patients/{id}", "PUT", "PATIENTS"));

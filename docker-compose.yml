@@ -1,15 +1,11 @@
 # PJI Advisor - Docker Compose
-# Hệ thống hỗ trợ chẩn đoán & gợi ý phác đồ
 
 # Usage:
-#   cp .env.example .env         # Tạo file env và điền secrets
 #   docker compose up -d         # Khởi chạy toàn bộ stack
 #   docker compose logs -f       # Xem logs
 #   docker compose down          # Dừng tất cả
 
 services:
-
-  # ===========================================================================
   # REVERSE PROXY - Caddy
   # Entry point duy nhất, tự động SSL via Let's Encrypt
   caddy:
@@ -19,7 +15,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "443:443/udp" # HTTP/3
+      - "443:443/udp"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data # SSL certificates
@@ -37,9 +33,7 @@ services:
       timeout: 5s
       retries: 3
 
-  # ===========================================================================
-  # FRONTEND - React/TypeScript SPA
-  # ===========================================================================
+  # Fe - React/TypeScript
   pji-frontend:
     image: ${DOCKERHUB_REPO:-local}/pji-frontend:${IMAGE_TAG:-latest}
     container_name: pji-frontend
@@ -58,18 +52,17 @@ services:
           memory: 256M
           cpus: '0.5'
 
-  # BACKEND - Spring Boot (Java)
+  # Be - Spring Boot
   pji-backend:
     image: ${DOCKERHUB_REPO:-local}/pji-backend:${IMAGE_TAG:-latest}
     container_name: pji-backend
     restart: unless-stopped
-    # Port 8085 chỉ expose nội bộ, Caddy proxy vào
+    # Port 8085 expose nội bộ, Caddy proxy vào
     expose:
       - "8085"
     environment:
       # Spring profiles
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
-
       # Database
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-pji_advisor}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-pji_user}
@@ -122,7 +115,7 @@ services:
           memory: 1536M
           cpus: '2.0'
 
-  # RAG SERVICE - FastAPI Gateway (aio-pika + LightRAG)
+  # RAG SERVICE - FastAPI (Adaptive RAG + Groq LLM + Cohere + Zilliz)
   pji-rag-service:
     image: ${DOCKERHUB_REPO:-local}/pji-rag-service:${IMAGE_TAG:-latest}
     container_name: pji-rag-service
@@ -130,29 +123,24 @@ services:
     expose:
       - "8000"
     environment:
-      # RabbitMQ
+      # RabbitMQ — queue names must match Spring Boot RabbitMQConfig
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-pji_user}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
-      RABBITMQ_QUEUE_REQUEST: rag.request
-      RABBITMQ_QUEUE_RESPONSE: rag.response
+      RABBITMQ_EXCHANGE: pji.ai.exchange
+      RABBITMQ_RECOMMENDATION_QUEUE: pji.ai.recommendation.queue
+      RABBITMQ_RECOMMENDATION_RESULT_ROUTING_KEY: ai.recommendation.result
 
-      # LLM - Qwen (self-hosted hoặc API)
-      LLM_MODEL_NAME: ${LLM_MODEL_NAME:-qwen2.5-7b-instruct}
-      LLM_API_URL: ${LLM_API_URL:-http://localhost:11434/v1} # Ollama endpoint nếu self-host
-      LLM_API_KEY: ${LLM_API_KEY:-}
+      # LLM — Groq API
+      GROQ_API_KEY: ${GROQ_API_KEY}
 
-      # Hugging Face - Entity extraction
-      HF_TOKEN: ${HF_TOKEN:-}
-      HF_MODEL_ENTITY: ${HF_MODEL_ENTITY:-}
+      # Cohere — embeddings & reranking
+      COHERE_API_KEY: ${COHERE_API_KEY}
 
-      # Jina - Embeddings & Reranking
-      JINA_API_KEY: ${JINA_API_KEY:-}
-      JINA_EMBED_MODEL: jina-embeddings-v3
-      JINA_RERANK_MODEL: jina-reranker-v2
+      # Vector DB — Zilliz Cloud
+      ZILLIZ_URI: ${ZILLIZ_URI}
+      ZILLIZ_API_KEY: ${ZILLIZ_API_KEY}
 
-      # LightRAG
-      LIGHTRAG_WORKING_DIR: /app/data/lightrag
-      LIGHTRAG_CHUNK_SIZE: 1200
-      LIGHTRAG_CHUNK_OVERLAP: 200
+      # Web search fallback
+      TAVILY_API_KEY: ${TAVILY_API_KEY:-}
 
       # OpenTelemetry
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
@@ -160,9 +148,6 @@ services:
 
       # Pydantic strict validation
       PYDANTIC_STRICT: "true"
-    volumes:
-      - rag_data:/app/data # LightRAG index, vector store
-      - pdf_guidelines:/app/data/guidelines # PDF phác đồ y tế
     networks:
       - backend-net
       - rag-net
@@ -209,7 +194,7 @@ services:
         limits:
           memory: 1G
           cpus: '2.0'
-    # QUAN TRỌNG: Cấu hình thêm cho production
+    # Cấu hình thêm cho production
     command: >
       postgres
         -c shared_buffers=256MB
@@ -266,7 +251,7 @@ services:
       retries: 5
       start_period: 30s
 
-  # OBJECT STORAGE - MinIO (lưu PDF guidelines, file uploads)
+  # OBJECT STORAGE - MinIO (file uploads)
   minio:
     image: minio/minio:latest
     container_name: pji-minio
@@ -294,10 +279,8 @@ services:
           memory: 512M
           cpus: '1.0'
 
-  # ===========================================================================
   # MONITORING - OpenTelemetry Collector
-  # Trung tâm thu thập traces, metrics, logs rồi fan-out
-  # ===========================================================================
+  # thu thập traces, metrics, logs rồi fan-out
   otel-collector:
     image: otel/opentelemetry-collector:0.142.0
     container_name: pji-otel-collector
@@ -322,9 +305,7 @@ services:
           memory: 256M
           cpus: '0.5'
 
-  # ===========================================================================
   # MONITORING - Jaeger (Distributed Tracing)
-  # ===========================================================================
   jaeger:
     image: jaegertracing/all-in-one:latest
     container_name: pji-jaeger
@@ -342,9 +323,7 @@ services:
           memory: 512M
           cpus: '1.0'
 
-  # ===========================================================================
   # MONITORING - Prometheus (Metrics)
-  # ===========================================================================
   prometheus:
     image: prom/prometheus:latest
     container_name: pji-prometheus
@@ -371,9 +350,7 @@ services:
           memory: 512M
           cpus: '1.0'
 
-  # ===========================================================================
   # MONITORING - Loki (Log Aggregation)
-  # ===========================================================================
   loki:
     image: grafana/loki:latest
     container_name: pji-loki
@@ -395,10 +372,8 @@ services:
           memory: 512M
           cpus: '1.0'
 
-  # ===========================================================================
   # MONITORING - Promtail (Log shipper → Loki)
   # Thu logs từ tất cả containers gửi về Loki
-  # ===========================================================================
   promtail:
     image: grafana/promtail:latest
     container_name: pji-promtail
@@ -412,9 +387,7 @@ services:
     depends_on:
       - loki
 
-  # ===========================================================================
   # MONITORING - Grafana (Dashboard & Visualization)
-  # ===========================================================================
   grafana:
     image: grafana/grafana:latest
     container_name: pji-grafana
@@ -462,9 +435,7 @@ networks:
   monitoring-net:
     driver: bridge
 
-# =============================================================================
 # VOLUMES - Persistent data
-# =============================================================================
 volumes:
   caddy_data:
   caddy_config:
@@ -473,7 +444,6 @@ volumes:
   rabbitmq_data:
   minio_data:
   rag_data:
-  pdf_guidelines:
   prometheus_data:
   loki_data:
   grafana_data:
