@@ -67,11 +67,126 @@ services:
       timeout: 5s
       retries: 10
 
+  rag-service:
+    build:
+      context: ../Medical_RAG_PJI_latest
+      dockerfile: Dockerfile
+    image: ${DOCKERHUB_REPO:-hieupahmet}/rag-service:${IMAGE_TAG:-latest}
+    container_name: rag-service
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
+    env_file:
+      - ../Medical_RAG_PJI_latest/.env
+    environment:
+      # RabbitMQ — connect to local broker
+      RABBITMQ_URL: amqp://admin:admin2026@rabbitmq:5672/
+      # OpenTelemetry — send traces to collector
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: rag-service
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - pji-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # MONITORING
+  otel-collector:
+    image: otel/opentelemetry-collector:0.142.0
+    container_name: pji-otel-collector
+    restart: unless-stopped
+    command: ["--config=/etc/otel/config.yml"]
+    volumes:
+      - ./docker/otelcollector/config.yml:/etc/otel/config.yml:ro
+    ports:
+      - "127.0.0.1:4317:4317"
+      - "127.0.0.1:4318:4318"
+    networks:
+      - pji-network
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: pji-jaeger
+    restart: unless-stopped
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "127.0.0.1:16686:16686"
+    networks:
+      - pji-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: pji-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./docker/prometheus/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    networks:
+      - pji-network
+
+  loki:
+    image: grafana/loki:latest
+    container_name: pji-loki
+    restart: unless-stopped
+    command: -config.file=/etc/loki/config.yaml
+    volumes:
+      - ./docker/logging/loki-config.yml:/etc/loki/config.yaml:ro
+      - loki_data:/loki
+    ports:
+      - "127.0.0.1:3101:3100"
+    networks:
+      - pji-network
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: pji-promtail
+    restart: unless-stopped
+    volumes:
+      - ./docker/logging/promtail-config.yml:/etc/promtail/config.yaml:ro
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    networks:
+      - pji-network
+    depends_on:
+      - loki
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: pji-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin2026
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./docker/monitoring/grafana-config.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+    ports:
+      - "127.0.0.1:3000:3000"
+    networks:
+      - pji-network
+
 volumes:
   postgres_data:
   redis_data:
   minio_data:
   rabbitmq_data:
+  prometheus_data:
+  loki_data:
+  grafana_data:
 
 networks:
   pji-network:

@@ -35,6 +35,7 @@ public class CultureResult extends AbstractEntity<Long> implements Serializable 
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private CultureStatus result;
 
+    @Column(name = "antibioticed")
     private Boolean antibioticed;
 
     @Column(name = "days_off_antibio")

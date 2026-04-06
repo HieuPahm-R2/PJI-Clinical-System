@@ -13,7 +13,8 @@ spring:
       ddl-auto: none
     show-sql: true
     properties:
-      hibernate: format_sql:true
+      hibernate:
+        format_sql: true
   application:
     name: pji
   data:
@@ -68,8 +69,6 @@ openapi:
     title: API Document
     version: 1.0.0
 
-
-
 ai:
   service:
     base-url: ${AI_SERVICE_URL:http://localhost:8000}
@@ -78,4 +77,21 @@ ai:
 
 server:
   port: 8085
+
+# Actuator — expose health, metrics, prometheus endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: always
+  tracing:
+    enabled: ${OTEL_TRACING_ENABLED:true}
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318/v1/traces}
 

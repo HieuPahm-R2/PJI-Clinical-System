@@ -1,6 +1,6 @@
 # Reverse proxy + auto SSL + security headers
 
-# Usage:
+# 	==== Usage ====:
 #   Development:  DOMAIN=localhost docker compose up caddy
 #   Production:   DOMAIN=pji-advisor.example.com docker compose up caddy
 

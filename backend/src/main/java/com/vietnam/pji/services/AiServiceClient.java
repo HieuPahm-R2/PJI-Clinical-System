@@ -4,7 +4,6 @@ import com.vietnam.pji.dto.request.AiChatRequestDTO;
 import com.vietnam.pji.dto.request.AiRecommendationGenerateRequestDTO;
 import com.vietnam.pji.dto.response.AiChatResponseDTO;
 import com.vietnam.pji.dto.response.AiRecommendationGenerateResponseDTO;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -27,8 +26,7 @@ public class AiServiceClient {
         return aiRestTemplate.postForObject(
                 "/api/v1/recommendation/generate",
                 request,
-                AiRecommendationGenerateResponseDTO.class
-        );
+                AiRecommendationGenerateResponseDTO.class);
     }
 
     public AiChatResponseDTO chat(AiChatRequestDTO request) {
@@ -37,7 +35,6 @@ public class AiServiceClient {
         return aiRestTemplate.postForObject(
                 "/api/v1/chat",
                 request,
-                AiChatResponseDTO.class
-        );
+                AiChatResponseDTO.class);
     }
 }

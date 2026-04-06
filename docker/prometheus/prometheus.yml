@@ -1,7 +1,6 @@
 # =============================================================================
 # Prometheus - Config
 # Scrape metrics từ OTel Collector và các services
-# =============================================================================
 
 global:
   scrape_interval: 15s
@@ -17,11 +16,12 @@ scrape_configs:
     static_configs:
       - targets: ["otel-collector:8889"]
 
-  # Spring Boot Actuator metrics (nếu expose riêng)
+  # Spring Boot Actuator metrics
+  # host.docker.internal vì backend chạy local, không trong Docker
   - job_name: "pji-backend"
     metrics_path: /actuator/prometheus
     static_configs:
-      - targets: ["pji-backend:8085"]
+      - targets: ["host.docker.internal:8085"]
 
   # Prometheus self-monitoring
   - job_name: "prometheus"
