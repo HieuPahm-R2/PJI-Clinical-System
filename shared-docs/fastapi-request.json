@@ -1,0 +1,279 @@
+{
+    "request_id": "string",
+    "episode_id": 0,
+    "snapshot_id": 0,
+    "snapshot_data_json": {
+        "snapshot_metadata": {
+            "snapshot_at": "2026-03-12T08:30:00Z",
+            "episode_id": 1001,
+            "episode_code": "EP-2026-00123",
+            "patient_id": 500,
+            "data_sources": [
+                "clinical_records",
+                "medical_histories",
+                "surgeries",
+                "lab_results",
+                "image_results",
+                "culture_results",
+                "sensitivity_results"
+            ]
+        },
+        "patient_demographics": {
+            "patient_code": "BN-2026-0500",
+            "full_name": "Hoàng Minh Kaha",
+            "date_of_birth": "2003-05-20",
+            "gender": "MALE"
+        },
+        "medical_history": {
+            "medical_history": "Tiền sử thay khớp háng phải 3 năm trước tại BV Chợ Rẫy. Tiểu đường type 2 điều trị Metformin 10 năm. Tăng huyết áp điều trị Amlodipine.",
+            "process": "Bệnh nhân đau khớp háng phải tăng dần 2 tháng nay, kèm sốt nhẹ về chiều. Đã dùng kháng sinh tuyến dưới không đỡ.",
+            "allergies": {
+                "is_allergy": true,
+                "allergy_note": "Dị ứng Penicillin (phát ban toàn thân)"
+            },
+            "substance_use": {
+                "is_drug": false,
+                "drug_note": null,
+                "is_alcohol": true,
+                "alcohol_note": "Uống bia 2-3 lon/tuần",
+                "is_smoking": false,
+                "smoking_note": null,
+                "is_other": true,
+                "other_note": "Tiểu đường type 2, Tăng huyết áp"
+            }
+        },
+        "clinical_records": {
+            "record_id": 3001,
+            "recorded_at": "2026-03-11T14:00:00Z",
+            "illness_onset_date": "2026-01-10",
+            "blood_pressure": "140/90",
+            "bmi": 27.5,
+            "fever": true,
+            "pain": true,
+            "erythema": true,
+            "swelling": true,
+            "sinus_tract": false,
+            "suspected_infection_type": "CHRONIC",
+            "hematogenous_suspected": false,
+            "implant_stability": "UNSTABLE",
+            "soft_tissue": "Viêm đỏ vùng đùi phải, có dịch rỉ",
+            "pmma_allergy": false,
+            "prosthesis_joint": "HIP_RIGHT",
+            "days_since_index_arthroplasty": 1095,
+            "notations": "Bệnh nhân tỉnh táo, tiếp xúc tốt. Tim đều, phổi trong. Bụng mềm. Khớp háng phải sưng nóng đỏ đau, hạn chế vận động."
+        },
+        "surgeries": {
+            "items": [
+                {
+                    "surgery_id": 201,
+                    "surgery_date": "2023-03-15",
+                    "surgery_type": "Total Hip Arthroplasty (THA)",
+                    "findings": "Thoái hóa khớp háng phải độ IV. Thay khớp háng toàn phần không xi măng."
+                },
+                {
+                    "surgery_id": 202,
+                    "surgery_date": "2026-02-20",
+                    "surgery_type": "Arthrocentesis - Chọc hút dịch khớp",
+                    "findings": "Dịch khớp đục, mùi hôi nhẹ. Gửi nuôi cấy vi khuẩn."
+                }
+            ]
+        },
+        "lab_results": {
+            "_note": "Lấy kết quả xét nghiệm gần nhất",
+            "lab_id": 4001,
+            "esr": {
+                "value": "18.0",
+                "unit": "mm/h"
+            },
+            "wbc_blood": {
+                "value": "12.5",
+                "unit": "x10^9/L"
+            },
+            "neut": {
+                "value": "78.5",
+                "unit": "%"
+            },
+            "mono": {
+                "value": 8.2,
+                "unit": "%"
+            },
+            "crp": {
+                "value": 95.3,
+                "unit": "mg/L"
+            },
+            "d_dimer": {
+                "value": 1.85,
+                "unit": "mg/L FEU"
+            },
+            "serum_il6": {
+                "value": 45.2,
+                "unit": "pg/mL"
+            },
+            "alpha_defensin": {
+                "value": "POSITIVE"
+            },
+            "rbc": {
+                "value": 4.25,
+                "unit": "x10^12/L"
+            },
+            "ig": {
+                "value": 0.5,
+                "unit": "%"
+            },
+            "mcv": {
+                "value": 88.0,
+                "unit": "fL"
+            },
+            "mch": {
+                "value": 30.5,
+                "unit": "pg"
+            },
+            "synovial_wbc": {
+                "value": 52000,
+                "unit": "cells/μL"
+            },
+            "synovial_pmn": {
+                "value": 92.0,
+                "unit": "%"
+            },
+            "biochemical_data": {
+                "glucose": {
+                    "value": 8.5,
+                    "unit": "mmol/L"
+                },
+                "ure": {
+                    "value": 6.2,
+                    "unit": "mmol/L"
+                },
+                "creatinine": {
+                    "value": 95,
+                    "unit": "μmol/L"
+                },
+                "eGFR": {
+                    "unit": "mL/min/1.73m2",
+                    "value": 95
+                },
+                "alt": {
+                    "value": 28,
+                    "unit": "U/L"
+                },
+                "ast": {
+                    "value": 32,
+                    "unit": "U/L"
+                },
+                "albumin": {
+                    "value": 32,
+                    "unit": "g/L"
+                },
+                "natri": {
+                    "value": 138,
+                    "unit": "mmol/L"
+                },
+                "clo": {
+                    "value": 101,
+                    "unit": "mmol/L"
+                },
+                "kali": {
+                    "value": 4.1,
+                    "unit": "mmol/L"
+                },
+                "hba1c": {
+                    "value": 7.8,
+                    "unit": "%"
+                }
+            }
+        },
+        "image_results": {
+            "items": [
+                {
+                    "image_id": 5001,
+                    "type": "X-RAY",
+                    "created_at": "2026-03-08T10:00:00Z",
+                    "findings": "X-quang khớp háng phải: Dấu hiệu lỏng lẻo khớp giả, có đường sáng quanh ổ cối và thân xương đùi >2mm. Không gãy xương.",
+                    "file_metadata": {
+                        "path": "https://pji-images/ep1001/xray_hip_right_20260308.dcm"
+                    }
+                },
+                {
+                    "image_id": 5002,
+                    "type": "CT",
+                    "created_at": "2026-03-09T11:00:00Z",
+                    "findings": "CT khớp háng phải: Tiêu xương quanh khớp giả vùng Gruen zone 1,7. Tụ dịch quanh khớp giả kích thước 3x4cm.",
+                    "file_metadata": {
+                        "path": "https://pji-images/ep1001/ct_hip_right_20260309.dcm"
+                    }
+                }
+            ]
+        },
+        "culture_results": {
+            "items": [
+                {
+                    "culture_id": 6001,
+                    "name": "Staphylococcus aureus",
+                    "result_status": "POSITIVE",
+                    "gram_type": "GRAM_POSITIVE",
+                    "incubation_days": 3,
+                    "notes": "Mọc sau 48h nuôi cấy, định danh bằng MALDI-TOF",
+                    "sensitivities": [
+                        {
+                            "antibiotic_name": "Vancomycin",
+                            "mic_value": "1",
+                            "sensitivity_code": "S"
+                        },
+                        {
+                            "antibiotic_name": "Rifampicin",
+                            "mic_value": "0.006",
+                            "sensitivity_code": "S"
+                        },
+                        {
+                            "antibiotic_name": "Oxacillin",
+                            "mic_value": ">2",
+                            "sensitivity_code": "R"
+                        },
+                        {
+                            "antibiotic_name": "Ciprofloxacin",
+                            "mic_value": "0.5",
+                            "sensitivity_code": "S"
+                        },
+                        {
+                            "antibiotic_name": "Trimethoprim-Sulfamethoxazole",
+                            "mic_value": "<=0.5/9.5",
+                            "sensitivity_code": "S"
+                        },
+                        {
+                            "antibiotic_name": "Daptomycin",
+                            "mic_value": "0.5",
+                            "sensitivity_code": "S"
+                        },
+                        {
+                            "antibiotic_name": "Linezolid",
+                            "mic_value": "2",
+                            "sensitivity_code": "S"
+                        }
+                    ]
+                },
+                {
+                    "culture_id": 6002,
+                    "organism_name": "Staphylococcus aureus",
+                    "result_status": "POSITIVE",
+                    "gram_type": "GRAM_POSITIVE",
+                    "incubation_days": 2,
+                    "notes": "Cùng chủng với mẫu dịch khớp",
+                    "sensitivities": [
+                        {
+                            "antibiotic_name": "Vancomycin",
+                            "mic_value": "1",
+                            "sensitivity_code": "S"
+                        },
+                        {
+                            "antibiotic_name": "Rifampicin",
+                            "mic_value": "0.006",
+                            "sensitivity_code": "S"
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    "options": {}
+}

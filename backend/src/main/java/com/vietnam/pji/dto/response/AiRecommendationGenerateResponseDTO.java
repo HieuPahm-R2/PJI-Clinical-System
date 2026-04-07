@@ -39,8 +39,10 @@ public class AiRecommendationGenerateResponseDTO implements Serializable {
     @JsonProperty("warnings_json")
     private List<Map<String, Object>> warningsJson;
 
+    @JsonProperty("ai_recommendation_items")
     private List<ItemDTO> items;
 
+    @JsonProperty("ai_rag_citations")
     private List<CitationDTO> citations;
 
     @Data
@@ -57,7 +59,11 @@ public class AiRecommendationGenerateResponseDTO implements Serializable {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ItemDTO implements Serializable {
-        @JsonProperty("client_item_key")
+        /**
+         * RAG sends "id" as the item key; Spring uses it as client_item_key
+         * to link citations back to items.
+         */
+        @JsonProperty("id")
         private String clientItemKey;
 
         private String category;
@@ -78,7 +84,10 @@ public class AiRecommendationGenerateResponseDTO implements Serializable {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class CitationDTO implements Serializable {
-        @JsonProperty("client_item_key")
+        /**
+         * RAG sends "item_id" to reference which item this citation belongs to.
+         */
+        @JsonProperty("item_id")
         private String clientItemKey;
 
         @JsonProperty("source_type")

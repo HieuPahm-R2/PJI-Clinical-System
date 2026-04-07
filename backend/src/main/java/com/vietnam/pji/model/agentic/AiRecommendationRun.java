@@ -23,12 +23,12 @@ public class AiRecommendationRun extends AbstractEntity<Long> implements Seriali
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "episode_id", nullable = false)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private PjiEpisode episode;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "snapshot_id")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private CaseClinicalSnapshot snapshot;
 
     @Column(name = "run_no")
@@ -66,6 +66,6 @@ public class AiRecommendationRun extends AbstractEntity<Long> implements Seriali
     @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;
 
-    @Column(name = "request_id", length = 100)
+    @Column(name = "request_id")
     private String requestId;
 }
