@@ -1,7 +1,5 @@
 package com.vietnam.pji.dto.request;
 
-import com.vietnam.pji.model.medical.CultureResult;
-
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;

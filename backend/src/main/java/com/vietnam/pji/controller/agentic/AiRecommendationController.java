@@ -18,55 +18,55 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "AI Recommendation Controller")
 public class AiRecommendationController {
 
-    private final AiRecommendationService aiRecommendationService;
+        private final AiRecommendationService aiRecommendationService;
 
-    /**
-     * Async: publishes to RabbitMQ, returns 202 with run in PROCESSING status.
-     * Client polls GET /ai-recommendations/runs/{runId} for the result.
-     */
-    @PostMapping("/episodes/{episodeId}/ai-recommendations/generate")
-    @ResponseStatus(HttpStatus.ACCEPTED)
-    @Operation(summary = "Generate AI recommendation (async via RabbitMQ)")
-    public ResponseData<AiRecommendationRunDetailDTO> generateRecommendation(
-            @PathVariable Long episodeId) {
-        return new ResponseData<>(HttpStatus.ACCEPTED.value(),
-                "Recommendation job submitted — poll GET /ai-recommendations/runs/{runId} for result",
-                aiRecommendationService.generateRecommendationAsync(episodeId, TriggerType.MANUAL_GENERATE));
-    }
+        /**
+         * Async: publishes to RabbitMQ, returns 202 with run in PROCESSING status.
+         * Client polls GET /ai-recommendations/runs/{runId} for the result.
+         */
+        @PostMapping("/episodes/{episodeId}/ai-recommendations/generate")
+        @ResponseStatus(HttpStatus.ACCEPTED)
+        @Operation(summary = "Generate AI recommendation (async via RabbitMQ)")
+        public ResponseData<AiRecommendationRunDetailDTO> generateRecommendation(@PathVariable Long episodeId) {
+                return new ResponseData<>(HttpStatus.ACCEPTED.value(),
+                                "Recommendation job submitted — poll GET /ai-recommendations/runs/{runId} for result",
+                                aiRecommendationService.generateRecommendationAsync(episodeId,
+                                                TriggerType.MANUAL_GENERATE));
+        }
 
-    /**
-     * Sync fallback: calls AI service via HTTP, blocks until result.
-     * Use this only when RabbitMQ is unavailable.
-     */
-    @PostMapping("/episodes/{episodeId}/ai-recommendations/generate-sync")
-    @Operation(summary = "Generate AI recommendation (sync HTTP fallback)")
-    public ResponseData<AiRecommendationRunDetailDTO> generateRecommendationSync(
-            @PathVariable Long episodeId) {
-        return new ResponseData<>(HttpStatus.OK.value(), "Recommendation generated successfully",
-                aiRecommendationService.generateRecommendation(episodeId, TriggerType.MANUAL_GENERATE));
-    }
+        /**
+         * Sync fallback: calls AI service via HTTP, blocks until result.
+         * Use this only when RabbitMQ is unavailable.
+         */
+        @PostMapping("/episodes/{episodeId}/ai-recommendations/generate-sync")
+        @Operation(summary = "Generate AI recommendation (sync HTTP fallback)")
+        public ResponseData<AiRecommendationRunDetailDTO> generateRecommendationSync(
+                        @PathVariable Long episodeId) {
+                return new ResponseData<>(HttpStatus.OK.value(), "Recommendation generated successfully",
+                                aiRecommendationService.generateRecommendation(episodeId, TriggerType.MANUAL_GENERATE));
+        }
 
-    @GetMapping("/episodes/{episodeId}/ai-recommendations/runs")
-    @Operation(summary = "Get AI recommendation run history for an episode")
-    public ResponseData<PaginationResultDTO> getRunHistory(
-            @PathVariable Long episodeId, Pageable pageable) {
-        return new ResponseData<>(HttpStatus.OK.value(), "Fetch run history successfully",
-                aiRecommendationService.getRunHistory(episodeId, pageable));
-    }
+        @GetMapping("/episodes/{episodeId}/ai-recommendations/runs")
+        @Operation(summary = "Get AI recommendation run history for an episode")
+        public ResponseData<PaginationResultDTO> getRunHistory(
+                        @PathVariable Long episodeId, Pageable pageable) {
+                return new ResponseData<>(HttpStatus.OK.value(), "Fetch run history successfully",
+                                aiRecommendationService.getRunHistory(episodeId, pageable));
+        }
 
-    @GetMapping("/ai-recommendations/runs/{runId}")
-    @Operation(summary = "Get detail of a specific AI recommendation run (poll for async result)")
-    public ResponseData<AiRecommendationRunDetailDTO> getRunDetail(@PathVariable Long runId) {
-        return new ResponseData<>(HttpStatus.OK.value(), "Fetch run detail successfully",
-                aiRecommendationService.getRunDetail(runId));
-    }
+        @GetMapping("/ai-recommendations/runs/{runId}")
+        @Operation(summary = "Get detail of a specific AI recommendation run (poll for async result)")
+        public ResponseData<AiRecommendationRunDetailDTO> getRunDetail(@PathVariable Long runId) {
+                return new ResponseData<>(HttpStatus.OK.value(), "Fetch run detail successfully",
+                                aiRecommendationService.getRunDetail(runId));
+        }
 
-    @PostMapping("/ai-recommendations/runs/{runId}/retry")
-    @ResponseStatus(HttpStatus.ACCEPTED)
-    @Operation(summary = "Retry a failed AI recommendation run (async)")
-    public ResponseData<AiRecommendationRunDetailDTO> retryRun(@PathVariable Long runId) {
-        return new ResponseData<>(HttpStatus.ACCEPTED.value(),
-                "Retry job submitted",
-                aiRecommendationService.retryRun(runId));
-    }
+        @PostMapping("/ai-recommendations/runs/{runId}/retry")
+        @ResponseStatus(HttpStatus.ACCEPTED)
+        @Operation(summary = "Retry a failed AI recommendation run (async)")
+        public ResponseData<AiRecommendationRunDetailDTO> retryRun(@PathVariable Long runId) {
+                return new ResponseData<>(HttpStatus.ACCEPTED.value(),
+                                "Retry job submitted",
+                                aiRecommendationService.retryRun(runId));
+        }
 }

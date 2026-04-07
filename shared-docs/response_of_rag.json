@@ -1,0 +1,332 @@
+{
+  "request_id": "string",
+  "status": "SUCCESS",
+  "model": {
+    "name": "rag-llm",
+    "version": "v1"
+  },
+  "latency_ms": 7209,
+  "run_id": "run-cf9dc39b-73d1-4a73-a4cc-54d51e761c59",
+  "data_completeness": {
+    "is_complete": false,
+    "missing_items": [
+      {
+        "field": "sinus_tract",
+        "category": "ICM_MAJOR",
+        "importance": "CRITICAL",
+        "message": "Duong ro thong voi khop gia (major criterion) — ket luan INFECTED ngay neu duong tinh"
+      },
+      {
+        "field": "serum_CRP",
+        "category": "ICM_MINOR",
+        "importance": "HIGH",
+        "message": "CRP huyet thanh (2 diem ICM) — marker viem he thong"
+      },
+      {
+        "field": "serum_ESR",
+        "category": "ICM_MINOR",
+        "importance": "HIGH",
+        "message": "Toc do mau lang ESR (1 diem ICM)"
+      },
+      {
+        "field": "serum_D_Dimer",
+        "category": "ICM_MINOR",
+        "importance": "HIGH",
+        "message": "D-Dimer (2 diem ICM, ket hop CRP)"
+      },
+      {
+        "field": "serum_IL6",
+        "category": "ICM_MINOR",
+        "importance": "MEDIUM",
+        "message": "IL-6 huyet thanh (1 diem ICM)"
+      },
+      {
+        "field": "synovial_WBC",
+        "category": "ICM_MINOR",
+        "importance": "CRITICAL",
+        "message": "Bach cau dich khop (3 diem ICM) — marker quan trong nhat"
+      },
+      {
+        "field": "synovial_PMN",
+        "category": "ICM_MINOR",
+        "importance": "HIGH",
+        "message": "PMN% dich khop (2 diem ICM)"
+      },
+      {
+        "field": "synovial_alpha_defensin",
+        "category": "ICM_MINOR",
+        "importance": "HIGH",
+        "message": "Alpha-Defensin (3 diem ICM) — do dac hieu >96%"
+      },
+      {
+        "field": "synovial_LE",
+        "category": "ICM_MINOR",
+        "importance": "MEDIUM",
+        "message": "Leukocyte Esterase dich khop (3 diem ICM) — test nhanh tai cho"
+      },
+      {
+        "field": "positive_histology",
+        "category": "ICM_MINOR",
+        "importance": "HIGH",
+        "message": "Giai phau benh mo quanh khop (3 diem ICM) — can sinh thiet mo trong phau thuat"
+      },
+      {
+        "field": "infection_type",
+        "category": "CLINICAL",
+        "importance": "HIGH",
+        "message": "Chua xac dinh ACUTE/CHRONIC — anh huong nguong ICM va chien luoc phau thuat"
+      },
+      {
+        "field": "implant_stability",
+        "category": "CLINICAL",
+        "importance": "HIGH",
+        "message": "Chua danh gia on dinh implant — anh huong chon DAIR vs revision"
+      },
+      {
+        "field": "renal_function",
+        "category": "CLINICAL",
+        "importance": "MEDIUM",
+        "message": "Chua co creatinine/eGFR — can de chinh lieu Vancomycin va TMP-SMX"
+      },
+      {
+        "field": "liver_function",
+        "category": "CLINICAL",
+        "importance": "MEDIUM",
+        "message": "Chua co AST/ALT — can de danh gia an toan Rifampicin"
+      }
+    ],
+    "completeness_score": "0/9 ICM minor criteria co du lieu",
+    "impact_note": "Thieu 2 du lieu CRITICAL — ket qua chan doan va phac do co the khong chinh xac. Khuyen nghi bo sung truoc khi ap dung."
+  },
+  "ai_recommendation_items": [
+    {
+      "id": "item-90ef2069-d09d-4d6c-a239-9b1f432b5a52",
+      "category": "DIAGNOSTIC_TEST",
+      "title": "Đánh giá chẩn đoán nhiễm trùng khớp giả",
+      "item_json": {
+        "scoring_system": {
+          "name": "ICM 2018 PJI Diagnostic Criteria",
+          "version": "2018 (Philadelphia Consensus)",
+          "total_score": 6,
+          "interpretation": "INFECTED",
+          "confidence_note": "Dựa trên các tiêu chí ICM 2018, bệnh nhân có dấu hiệu nhiễm trùng khớp giả"
+        },
+        "major_criteria": {
+          "note": "Các tiêu chí chính",
+          "items": [
+            {
+              "criterion": "Có dịch tiết ra từ vết thương hoặc có đường dẫn đến khớp",
+              "result": false,
+              "result_detail": "Không có đường dẫn đến khớp nhưng có dịch tiết đục",
+              "is_decisive": false
+            },
+            {
+              "criterion": "Hai mẫu nuôi cấy vi khuẩn giống nhau",
+              "result": true,
+              "result_detail": "Hai mẫu nuôi cấy Staphylococcus aureus với cùng đặc tính",
+              "is_decisive": true
+            }
+          ],
+          "major_criteria_met": true,
+          "major_criteria_conclusion": "Đáp ứng tiêu chí chính về nuôi cấy vi khuẩn"
+        },
+        "minor_criteria_scoring": {
+          "note": "Các tiêu chí phụ",
+          "items": [
+            {
+              "criterion": "Tăng CRP và ESR",
+              "score_weight": 1,
+              "result": true,
+              "result_detail": "CRP: 95.3 mg/L, ESR: 18 mm/h",
+              "score_awarded": 1
+            },
+            {
+              "criterion": "Tăng số lượng bạch cầu trong dịch khớp",
+              "score_weight": 1,
+              "result": true,
+              "result_detail": "Số lượng bạch cầu: 52000 cells/μL",
+              "score_awarded": 1
+            },
+            {
+              "criterion": "Tăng tỷ lệ đa nhân trung tính trong dịch khớp",
+              "score_weight": 1,
+              "result": true,
+              "result_detail": "Tỷ lệ đa nhân trung tính: 92%",
+              "score_awarded": 1
+            }
+          ],
+          "total_minor_score": 3,
+          "total_minor_score_note": "Đáp ứng 3 tiêu chí phụ"
+        },
+        "ai_reasoning": {
+          "primary_diagnosis": "Nhiễm trùng khớp giả",
+          "infection_classification": "CHRONIC",
+          "infection_classification_reasoning": "Bệnh nhân có triệu chứng kéo dài 2 tháng",
+          "identified_organism": {
+            "name": "Staphylococcus aureus",
+            "resistance_profile": " Nhạy cảm với Vancomycin, Rifampicin, Ciprofloxacin",
+            "resistance_detail": "Kháng với Oxacillin",
+            "biofilm_forming": true,
+            "virulence_note": "Có khả năng tạo màng sinh học"
+          },
+          "reasoning_summary": "Bệnh nhân có các dấu hiệu và kết quả xét nghiệm phù hợp với nhiễm trùng khớp giả mãn tính do Staphylococcus aureus",
+          "warnings": [
+            {
+              "type": "ALLERGY_ALERT",
+              "severity": "HIGH",
+              "message": "Bệnh nhân dị ứng với Penicillin"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "item-48618874-0c45-4ef9-a8f2-7805702f431d",
+      "category": "SYSTEMIC_ANTIBIOTIC",
+      "title": "Phác đồ kháng sinh toàn thân",
+      "item_json": {
+        "regimen_name": "Vancomycin + Rifampicin",
+        "indication": "Nhiễm trùng khớp giả do Staphylococcus aureus",
+        "total_duration_weeks": 6,
+        "phases": [
+          {
+            "phase_name": "Giai đoạn tấn công",
+            "phase_order": 1,
+            "duration_weeks": 2,
+            "duration_note": "Kháng sinh tiêm tĩnh mạch",
+            "antibiotics": [
+              {
+                "antibiotic_name": "Vancomycin",
+                "dosage": "1g x 2 lần/ngày",
+                "frequency": "12 giờ/lần",
+                "route": "IV",
+                "sequence_order": 1,
+                "role": "PRIMARY",
+                "notes": "Điều chỉnh liều dựa trên chức năng thận"
+              }
+            ]
+          },
+          {
+            "phase_name": "Giai đoạn duy trì",
+            "phase_order": 2,
+            "duration_weeks": 4,
+            "duration_note": "Kháng sinh đường uống",
+            "antibiotics": [
+              {
+                "antibiotic_name": "Rifampicin",
+                "dosage": "450mg x 2 lần/ngày",
+                "frequency": "12 giờ/lần",
+                "route": "ORAL",
+                "sequence_order": 1,
+                "role": "PRIMARY",
+                "notes": "Uống sau bữa ăn"
+              },
+              {
+                "antibiotic_name": "Ciprofloxacin",
+                "dosage": "500mg x 2 lần/ngày",
+                "frequency": "12 giờ/lần",
+                "route": "ORAL",
+                "sequence_order": 2,
+                "role": "SYNERGISTIC",
+                "notes": "Uống sau bữa ăn"
+              }
+            ]
+          }
+        ],
+        "monitoring": [
+          "Chức năng thận",
+          "Gan"
+        ],
+        "contraindications": [
+          "Mang thai",
+          "Suy gan nặng"
+        ],
+        "notes": "Cân nhắc điều chỉnh liều cho bệnh nhân suy thận"
+      }
+    },
+    {
+      "id": "item-058d055b-2747-483d-a964-686b845d1438",
+      "category": "SURGERY_PROCEDURE",
+      "title": "Phác đồ phẫu thuật",
+      "item_json": {
+        "surgery_strategy_type": "TWO_STAGE_REVISION",
+        "strategy_rationale": "Bệnh nhân có nhiễm trùng khớp giả mãn tính",
+        "priority_level": "HIGH",
+        "priority_note": "Cần phẫu thuật để loại bỏ nguồn nhiễm trùng",
+        "stages": [
+          {
+            "stage_order": 1,
+            "stage_name": "Giai đoạn 1: Tháo bỏ khớp giả và đặt spacer",
+            "estimated_duration_minutes": 120,
+            "interval_from_stage1": 6,
+            "preconditions": [
+              "Kháng sinh toàn thân tối thiểu 2 tuần"
+            ]
+          },
+          {
+            "stage_order": 2,
+            "stage_name": "Giai đoạn 2: Lắp đặt khớp giả mới",
+            "estimated_duration_minutes": 120,
+            "interval_from_stage1": null,
+            "preconditions": [
+              "Kháng sinh toàn thân thêm 2 tuần",
+              "Không có dấu hiệu nhiễm trùng"
+            ]
+          }
+        ],
+        "estimated_total_treatment_time": "Khoảng 12 tuần",
+        "risks_and_complications": [
+          "Suy chức năng thận",
+          "Nhiễm trùng sau phẫu thuật"
+        ],
+        "notes": "Cần theo dõi chặt chẽ bệnh nhân sau phẫu thuật"
+      }
+    }
+  ],
+  "ai_rag_citations": [
+    {
+      "id": "cit-7ff7b1bf-6411-4012-a710-c4c05dc30e3e",
+      "run_id": "run-cf9dc39b-73d1-4a73-a4cc-54d51e761c59",
+      "item_id": "item-90ef2069-d09d-4d6c-a239-9b1f432b5a52",
+      "source_type": "GUIDELINE",
+      "source_title": "ICM 2018 PJI Diagnostic Criteria",
+      "source_uri": "https://www.icmmsociety.org/",
+      "snippet": "Tiêu chí chẩn đoán nhiễm trùng khớp giả của ICM 2018",
+      "relevance_score": 0.95,
+      "cited_for": "Chẩn đoán nhiễm trùng khớp giả"
+    },
+    {
+      "id": "cit-4dd25505-01fa-4b42-8079-62a2a31388e4",
+      "run_id": "run-cf9dc39b-73d1-4a73-a4cc-54d51e761c59",
+      "item_id": null,
+      "source_type": "GUIDELINE",
+      "source_title": "PJI Diagnosis and Therapy Vietnam Gehrke.pdf",
+      "source_uri": "PJI Diagnosis and Therapy Vietnam Gehrke.pdf",
+      "snippet": "imately two-thirds of culture-negative PJIs had identi ﬁable opportunistically pathogenic organisms, and furthermore, the\nmajority of infections were polymicrobial.\nLevel of Evidence: Diagnostic Level II. See Instructions for Authors for a complete description of levels of evidence.\nT\nhe diagnosis a",
+      "relevance_score": 0.8,
+      "cited_for": "Tai lieu tham khao RAG"
+    },
+    {
+      "id": "cit-cb945df9-b791-4605-b1ef-41b01a3a3a18",
+      "run_id": "run-cf9dc39b-73d1-4a73-a4cc-54d51e761c59",
+      "item_id": null,
+      "source_type": "GUIDELINE",
+      "source_title": "State-of-the-art diagnosis and surgical treatment of acute peri-prosthetic joint infection following primary total hip arthroplasty.pdf",
+      "source_uri": "State-of-the-art diagnosis and surgical treatment of acute peri-prosthetic joint infection following primary total hip arthroplasty.pdf",
+      "snippet": "435\nState-of-the-art diagnoSiS and Surgical treatment of acute PJi folloWing PrimarY tha\nearly diagnosis and treatment of the acute THA infection, \nmainly Tsukayama type 1 and 3 post-operative PJIs.\nAccurate diagnosis of peri-prosthetic joint \ninfection\nNowadays, diagnosis of PJI is evolving towards",
+      "relevance_score": 0.8,
+      "cited_for": "Tai lieu tham khao RAG"
+    },
+    {
+      "id": "cit-20da4ae2-b1f2-4478-a01a-732c4eda449e",
+      "run_id": "run-cf9dc39b-73d1-4a73-a4cc-54d51e761c59",
+      "item_id": null,
+      "source_type": "GUIDELINE",
+      "source_title": "PJI Diagnosis and Therapy Vietnam Gehrke.pdf",
+      "source_uri": "PJI Diagnosis and Therapy Vietnam Gehrke.pdf",
+      "snippet": "exchange arthroplasty\nIntroduction\nThe diagnosis of periprosthetic joint infection (PJI) is based \non a multiple criteria system due to the lack of a single test \nwith an accuracy of 100%. The consented criteria most \nbroadly accepted today are the Musculoskeletal Infection \nSociety (MSIS)/Internati",
+      "relevance_score": 0.8,
+      "cited_for": "Tai lieu tham khao RAG"
+    }
+  ]
+}
