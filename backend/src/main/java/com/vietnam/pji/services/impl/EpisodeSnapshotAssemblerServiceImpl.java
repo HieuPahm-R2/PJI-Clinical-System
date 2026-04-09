@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vietnam.pji.exception.ResourceNotFoundException;
 import com.vietnam.pji.model.medical.*;
 import com.vietnam.pji.repository.*;
+import com.vietnam.pji.repository.medical.ClinicalRecordRepository;
+import com.vietnam.pji.repository.medical.CultureResultRepository;
 import com.vietnam.pji.services.EpisodeSnapshotAssemblerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

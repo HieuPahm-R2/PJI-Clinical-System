@@ -1,12 +1,12 @@
-package com.vietnam.pji.services.impl;
+package com.vietnam.pji.services.impl.medical;
 
 import com.vietnam.pji.dto.request.ClinicalRecordRequestDTO;
 import com.vietnam.pji.dto.response.PaginationResultDTO;
 import com.vietnam.pji.exception.ResourceNotFoundException;
 import com.vietnam.pji.model.medical.ClinicalRecord;
 import com.vietnam.pji.model.medical.PjiEpisode;
-import com.vietnam.pji.repository.ClinicalRecordRepository;
 import com.vietnam.pji.repository.EpisodeRepository;
+import com.vietnam.pji.repository.medical.ClinicalRecordRepository;
 import com.vietnam.pji.services.ClinicalRecordService;
 import com.vietnam.pji.utils.mapper.ClinicalRecordMapper;
 import lombok.RequiredArgsConstructor;

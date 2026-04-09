@@ -1,4 +1,4 @@
-package com.vietnam.pji.services.impl;
+package com.vietnam.pji.services.impl.agent;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -181,19 +181,19 @@ public class AiRecommendationServiceImpl implements AiRecommendationService {
         }
         run.setLatencyMs(response.getLatencyMs());
 
-        try {
-            if (response.getAssessmentJson() != null) {
-                run.setAssessmentJson(objectMapper.writeValueAsString(response.getAssessmentJson()));
-            }
-            if (response.getExplanationJson() != null) {
-                run.setExplanationJson(objectMapper.writeValueAsString(response.getExplanationJson()));
-            }
-            if (response.getWarningsJson() != null) {
-                run.setWarningsJson(objectMapper.writeValueAsString(response.getWarningsJson()));
-            }
-        } catch (JsonProcessingException e) {
-            log.warn("Failed to serialize AI response JSON fields", e);
-        }
+        // try {
+        // if (response.getAssessmentJson() != null) {
+        // run.setAssessmentJson(objectMapper.writeValueAsString(response.getAssessmentJson()));
+        // }
+        // if (response.getExplanationJson() != null) {
+        // run.setExplanationJson(objectMapper.writeValueAsString(response.getExplanationJson()));
+        // }
+        // if (response.getWarningsJson() != null) {
+        // run.setWarningsJson(objectMapper.writeValueAsString(response.getWarningsJson()));
+        // }
+        // } catch (JsonProcessingException e) {
+        // log.warn("Failed to serialize AI response JSON fields", e);
+        // }
 
         runRepository.save(run);
 

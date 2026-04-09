@@ -169,12 +169,13 @@ public class AiChatServiceImpl implements AiChatService {
         // Run/item context
         if (request.isUseRunContext() && session.getRun() != null) {
             Map<String, Object> recContext = new LinkedHashMap<>();
-            recContext.put("assessment", session.getRun().getAssessmentJson());
+            // recContext.put("assessment", session.getRun().getAssessmentJson());
             if (session.getCurrentItem() != null) {
                 recContext.put("current_item", session.getCurrentItem().getItemJson());
             }
             // Include all items for the run
-            List<AiRecommendationItem> items = itemRepository.findByRunIdOrderByPriorityOrderAsc(session.getRun().getId());
+            List<AiRecommendationItem> items = itemRepository
+                    .findByRunIdOrderByPriorityOrderAsc(session.getRun().getId());
             List<Map<String, String>> itemSummaries = items.stream()
                     .map(i -> {
                         Map<String, String> m = new LinkedHashMap<>();
@@ -189,7 +190,8 @@ public class AiChatServiceImpl implements AiChatService {
 
         // Chat history (last 20 messages)
         if (request.isUseChatHistory()) {
-            List<AiChatMessage> recentMessages = messageRepository.findTop20BySessionIdOrderByCreatedAtDesc(session.getId());
+            List<AiChatMessage> recentMessages = messageRepository
+                    .findTop20BySessionIdOrderByCreatedAtDesc(session.getId());
             Collections.reverse(recentMessages); // oldest first
             List<AiChatRequestDTO.ChatMessageDTO> history = recentMessages.stream()
                     .map(m -> AiChatRequestDTO.ChatMessageDTO.builder()
