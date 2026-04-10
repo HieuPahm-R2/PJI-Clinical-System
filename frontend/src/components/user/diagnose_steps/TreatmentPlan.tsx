@@ -1,20 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Button, Input, Drawer, Spin, Modal, Result } from 'antd';
+import { Button, Input, Drawer, Spin, Modal, Result, message, Select } from 'antd';
 import { SendOutlined } from '@ant-design/icons';
 
 import SurgerySection from '../rag_diagnose/rag_surgery/SurgerySection';
 import LocalAntibioticTreatment from '../rag_diagnose/rag_antibiolocal/LocalAntibioticTreatment';
 import { SystemicAntibioticTreatment } from '../rag_diagnose/rag_antibiolocal/SystemicAntibioticTreatment';
+import type { SystemicAntibioticTreatmentHandle } from '../rag_diagnose/rag_antibiolocal/SystemicAntibioticTreatment';
+import type { LocalAntibioticTreatmentHandle } from '../rag_diagnose/rag_antibiolocal/LocalAntibioticTreatment';
 import type {
     SurgeryPlanData,
     SystemicPlanData,
     LocalPlanData,
     CitationData,
-} from './treatmentType';
+} from '@/types/treatmentType';
 import { clearCurrentCase } from '@/redux/slice/patientSlice';
-import { useDispatch } from 'react-redux';
-import { callFetchAiRecommendationRunDetail } from '@/apis/api';
-import type { IAiRecommendationRunDetail, IAiRagCitation } from '@/types/backend';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '@/redux/store';
+import { callFetchAiRecommendationRunDetail, callCreateDoctorReview, callFetchAiChatSessionsByEpisode, callCreateAiChatSession, callFetchAiChatMessages, callSendAiChatMessage } from '@/apis/api';
+import type { IAiRecommendationRunDetail, IAiRagCitation, IAiChatSession, IAiChatMessage } from '@/types/backend';
 
 interface Step5Props {
     onPrev: () => void;
@@ -60,8 +63,18 @@ const mapCitations = (citations?: IAiRagCitation[]): CitationData[] => {
 
 export const Step5TreatmentPlan: React.FC<Step5Props> = ({ onPrev }) => {
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+    const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+    const [reviewNote, setReviewNote] = useState('');
+    const [rejectionReason, setRejectionReason] = useState('');
     const [isChatOpen, setIsChatOpen] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const dispatch = useDispatch();
+    const currentCase = useSelector((state: RootState) => state.patient.currentCase);
+    const episodeId = currentCase?.episode?.id;
+
+    const systemicRef = useRef<SystemicAntibioticTreatmentHandle>(null);
+    const localRef = useRef<LocalAntibioticTreatmentHandle>(null);
+    const runIdRef = useRef<string | null>(null);
 
     const [surgeryPlan, setSurgeryPlan] = useState<SurgeryPlanData | null>(null);
     const [systemicPlan, setSystemicPlan] = useState<SystemicPlanData | null>(null);
@@ -70,17 +83,98 @@ export const Step5TreatmentPlan: React.FC<Step5Props> = ({ onPrev }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
 
-    const [messages, setMessages] = useState<Message[]>([
-        {
-            id: '1',
-            role: 'assistant',
-            content: 'Xin chào! Tôi là trợ lý AI. Bạn có thể hỏi tôi bất kỳ điều gì về phác đồ điều trị, kháng sinh, hay phẫu thuật trên.',
-            timestamp: new Date(),
-        },
-    ]);
+    const [sessions, setSessions] = useState<IAiChatSession[]>([]);
+    const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+    const [isFetchingSessions, setIsFetchingSessions] = useState(false);
+    const [isFetchingMessages, setIsFetchingMessages] = useState(false);
+
+    const [messages, setMessages] = useState<Message[]>([]);
     const [inputValue, setInputValue] = useState('');
     const [isChatLoading, setIsChatLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    const handleCreateNewSession = async () => {
+        if (!episodeId) return;
+        setIsFetchingSessions(true);
+        try {
+            const now = new Date();
+            const title = `Chat lúc ${now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} ${now.toLocaleDateString('vi-VN')}`;
+            const res = await callCreateAiChatSession({
+                episodeId: Number(episodeId),
+                runId: runIdRef.current ? Number(runIdRef.current) : undefined,
+                chatType: 'GENERAL',
+                title: title
+            });
+            if (res?.data?.id) {
+                const newId = String(res.data.id);
+                setSessions(prev => [res.data as IAiChatSession, ...prev]);
+                setCurrentSessionId(newId);
+            }
+        } catch (error) {
+            message.error("Lỗi khi tạo phiên chat mới");
+        } finally {
+            setIsFetchingSessions(false);
+        }
+    };
+
+    const loadSessions = async () => {
+        if (!episodeId) return;
+        setIsFetchingSessions(true);
+        try {
+            const res = await callFetchAiChatSessionsByEpisode(String(episodeId), "sort=createdAt,desc&size=50");
+            const fetchedSessions = res?.data?.result ?? [];
+            setSessions(fetchedSessions);
+            if (fetchedSessions.length > 0 && !currentSessionId) {
+                setCurrentSessionId(String(fetchedSessions[0].id));
+            } else if (fetchedSessions.length === 0) {
+                await handleCreateNewSession();
+            }
+        } catch (error) {
+            message.error("Lỗi khi tải lịch sử chat");
+        } finally {
+            setIsFetchingSessions(false);
+        }
+    };
+
+    const loadMessagesForSession = async (sessionId: string) => {
+        setIsFetchingMessages(true);
+        try {
+            const res = await callFetchAiChatMessages(sessionId, "sort=createdAt,asc&size=500");
+            const fetchedMsgs = res?.data?.result ?? [];
+            const mapped: Message[] = fetchedMsgs.map((m: IAiChatMessage) => ({
+                id: String(m.id),
+                role: m.role as 'user' | 'assistant',
+                content: m.content || '',
+                timestamp: m.createdAt ? new Date(m.createdAt) : new Date(),
+            }));
+
+            if (mapped.length === 0) {
+                mapped.push({
+                    id: 'greeting',
+                    role: 'assistant',
+                    content: 'Xin chào! Tôi là trợ lý AI. Bạn có thể hỏi tôi bất kỳ điều gì về phác đồ điều trị, kháng sinh, hay phẫu thuật trên.',
+                    timestamp: new Date()
+                });
+            }
+            setMessages(mapped);
+        } catch (error) {
+            message.error("Lỗi khi tải tin nhắn");
+        } finally {
+            setIsFetchingMessages(false);
+        }
+    };
+
+    useEffect(() => {
+        if (isChatOpen) {
+            loadSessions();
+        }
+    }, [isChatOpen, episodeId]);
+
+    useEffect(() => {
+        if (currentSessionId && isChatOpen) {
+            loadMessagesForSession(currentSessionId);
+        }
+    }, [currentSessionId, isChatOpen]);
 
     useEffect(() => {
         const loadRunDetail = async () => {
@@ -101,6 +195,10 @@ export const Step5TreatmentPlan: React.FC<Step5Props> = ({ onPrev }) => {
                 if (!detail?.items?.length) {
                     setLoadError('Không tìm thấy dữ liệu gợi ý. Vui lòng quay lại bước trước.');
                     return;
+                }
+
+                if (detail.run?.id) {
+                    runIdRef.current = String(detail.run.id);
                 }
 
                 const items = detail.items;
@@ -125,8 +223,47 @@ export const Step5TreatmentPlan: React.FC<Step5Props> = ({ onPrev }) => {
         loadRunDetail();
     }, []);
 
-    const handleConfirmTreatment = () => {
-        setIsSuccessModalOpen(true);
+    const openReviewModal = () => {
+        if (!episodeId || !runIdRef.current) {
+            message.error('Thiếu thông tin bệnh án hoặc lần gợi ý AI.');
+            return;
+        }
+        setReviewNote('');
+        setRejectionReason('');
+        setIsReviewModalOpen(true);
+    };
+
+    const handleConfirmTreatment = async () => {
+        setIsReviewModalOpen(false);
+        setIsSaving(true);
+        try {
+            const currentSystemic = systemicRef.current?.getData() ?? null;
+            const currentLocal = localRef.current?.getData() ?? null;
+
+            const hasModification =
+                (currentSystemic && JSON.stringify(currentSystemic) !== JSON.stringify(systemicPlan)) ||
+                (currentLocal && JSON.stringify(currentLocal) !== JSON.stringify(localPlan));
+            const reviewStatus = rejectionReason ? 'REJECTED' : hasModification ? 'MODIFIED' : 'ACCEPTED';
+
+            const modificationJson: Record<string, any> = {};
+            if (currentSystemic) modificationJson.systemicAntibiotic = currentSystemic;
+            if (currentLocal) modificationJson.localAntibiotic = currentLocal;
+            if (surgeryPlan) modificationJson.surgery = surgeryPlan;
+
+            await callCreateDoctorReview(String(episodeId), {
+                runId: Number(runIdRef.current),
+                reviewStatus,
+                reviewNote: reviewNote || undefined,
+                modificationJson: hasModification ? modificationJson : undefined,
+                rejectionReason: rejectionReason || undefined,
+            });
+
+            setIsSuccessModalOpen(true);
+        } catch {
+            message.error('Lỗi khi lưu xác nhận phác đồ.');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const backToHomepage = () => {
@@ -148,43 +285,45 @@ export const Step5TreatmentPlan: React.FC<Step5Props> = ({ onPrev }) => {
     }, [messages]);
 
     const handleSendMessage = async (text: string) => {
-        if (!text.trim()) return;
+        if (!text.trim() || !currentSessionId) return;
 
-        const userMessage: Message = {
+        const userMsgContent = text.trim();
+        setInputValue('');
+
+        const optimisticUserMsg: Message = {
             id: Date.now().toString(),
             role: 'user',
-            content: text,
+            content: userMsgContent,
             timestamp: new Date(),
         };
 
-        setMessages(prev => [...prev, userMessage]);
-        setInputValue('');
+        setMessages(prev => [...prev, optimisticUserMsg]);
         setIsChatLoading(true);
 
-        setTimeout(() => {
-            const aiResponse: Message = {
-                id: (Date.now() + 1).toString(),
-                role: 'assistant',
-                content: generateAIResponse(text),
-                timestamp: new Date(),
-            };
-            setMessages(prev => [...prev, aiResponse]);
+        try {
+            const res = await callSendAiChatMessage(currentSessionId, {
+                content: userMsgContent,
+                useEpisodeContext: true,
+                useRunContext: true,
+                useChatHistory: true
+            });
+            
+            if (res?.data) {
+                const aiData = res.data;
+                const aiMsg: Message = {
+                    id: String(aiData.id),
+                    role: 'assistant',
+                    content: aiData.content || '',
+                    timestamp: aiData.createdAt ? new Date(aiData.createdAt) : new Date()
+                };
+                setMessages(prev => [...prev, aiMsg]);
+            }
+        } catch (error: any) {
+            message.error(error?.response?.data?.message || "Lỗi kết nối với AI");
+            setMessages(prev => prev.filter(m => m.id !== optimisticUserMsg.id));
+        } finally {
             setIsChatLoading(false);
-        }, 1000);
-    };
-
-    const generateAIResponse = (userMessage: string): string => {
-        const lowerMessage = userMessage.toLowerCase();
-        const responses: { [key: string]: string } = {
-            'dair': 'DAIR khong phu hop cho PJI man tinh > 4 tuan va MRSA. Phuong an uu tien la two-stage revision ket hop khang sinh.',
-            'khang sinh': 'Phac do 2 giai doan: 6 tuan IV Vancomycin + Rifampicin, sau do 6 tuan TMP-SMX + Rifampicin duong uong.',
-            'phau thuat': 'Chi dinh two-stage revision: giai doan 1 thao implant + dat spacer khang sinh, giai doan 2 reimplantation sau 8-12 tuan neu dat tieu chuan.',
-            'phac do': 'Phac do tong the gom phau thuat 2 giai doan, khang sinh toan than 12 tuan, khang sinh tai cho qua ALCS, va theo doi sat CRP/ESR/chuc nang gan than.',
-        };
-        for (const [key, response] of Object.entries(responses)) {
-            if (lowerMessage.includes(key)) return response;
         }
-        return 'Can doi chieu voi tinh trang lam sang, khang sinh do va cac nguy co benh nen. Neu ban muon, toi co the tom tat nhanh theo tung giai doan dieu tri.';
     };
 
     if (isLoading) {
@@ -225,7 +364,8 @@ export const Step5TreatmentPlan: React.FC<Step5Props> = ({ onPrev }) => {
                     <Button
                         size="small"
                         type="primary"
-                        onClick={handleConfirmTreatment}
+                        onClick={openReviewModal}
+                        loading={isSaving}
                         className="bg-green-700 hover:!bg-green-400 border-none flex items-center gap-1.5"
                     >
                         Xác nhận <span className="material-symbols-outlined text-[14px]">save</span>
@@ -242,9 +382,9 @@ export const Step5TreatmentPlan: React.FC<Step5Props> = ({ onPrev }) => {
                     <div className="flex-1 overflow-y-auto p-4 space-y-4">
                         {surgeryPlan && <SurgerySection surgeryPlan={surgeryPlan} />}
                         {systemicPlan && (
-                            <SystemicAntibioticTreatment guidelinePlan={systemicPlan} />
+                            <SystemicAntibioticTreatment ref={systemicRef} guidelinePlan={systemicPlan} />
                         )}
-                        {localPlan && <LocalAntibioticTreatment localPlan={localPlan} />}
+                        {localPlan && <LocalAntibioticTreatment ref={localRef} localPlan={localPlan} />}
                         {!surgeryPlan && !systemicPlan && !localPlan && (
                             <Result status="info" title="Không có dữ liệu phác đồ điều trị cho ca bệnh này." />
                         )}
@@ -306,20 +446,40 @@ export const Step5TreatmentPlan: React.FC<Step5Props> = ({ onPrev }) => {
             {/* Chat Drawer */}
             <Drawer
                 title={
-                    <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-blue-400">forum</span>
-                        <span>Hỏi AI về phác đồ</span>
+                    <div className="flex items-center justify-between w-full pr-6">
+                        <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-blue-500">forum</span>
+                            <span className="font-semibold text-slate-800 hidden sm:block">Trợ lý AI</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Select
+                                value={currentSessionId}
+                                onChange={(val) => setCurrentSessionId(val)}
+                                className="w-52"
+                                size="small"
+                                loading={isFetchingSessions}
+                                placeholder="Chọn phiên chat"
+                                options={sessions.map(s => ({ value: String(s.id), label: s.title || `Session #${s.id}` }))}
+                            />
+                            <Button size="small" type="dashed" onClick={handleCreateNewSession} icon={<span className="material-symbols-outlined text-[14px]">add</span>} loading={isFetchingSessions}>
+                                Mới
+                            </Button>
+                        </div>
                     </div>
                 }
                 onClose={() => setIsChatOpen(false)}
                 open={isChatOpen}
-                width={450}
+                width={500}
                 bodyStyle={{ padding: '0px', display: 'flex', flexDirection: 'column', height: '100%' }}
-                headerStyle={{ borderBottom: '1px solid #e5e7eb' }}
+                headerStyle={{ borderBottom: '1px solid #e5e7eb', padding: '12px 16px' }}
             >
-                <div className="flex flex-col h-full bg-white">
+                <div className="flex flex-col h-full bg-slate-50">
                     <div className="flex-1 overflow-y-auto p-4 space-y-4 text-sm">
-                        {messages.map((msg) => (
+                        {isFetchingMessages ? (
+                            <div className="flex items-center justify-center p-8">
+                                <Spin tip="Đang tải lịch sử chat..." />
+                            </div>
+                        ) : messages.map((msg) => (
                             <div
                                 key={msg.id}
                                 className={`flex flex-col gap-1 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
@@ -378,6 +538,43 @@ export const Step5TreatmentPlan: React.FC<Step5Props> = ({ onPrev }) => {
                     </div>
                 </div>
             </Drawer>
+
+            {/* Review Modal */}
+            <Modal
+                title="Xác nhận phác đồ điều trị"
+                open={isReviewModalOpen}
+                onCancel={() => setIsReviewModalOpen(false)}
+                onOk={handleConfirmTreatment}
+                okText="Lưu"
+                cancelText="Hủy"
+                confirmLoading={isSaving}
+                destroyOnClose
+            >
+                <div className="space-y-4 py-2">
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                            Ghi chú của bác sĩ
+                        </label>
+                        <Input.TextArea
+                            rows={3}
+                            placeholder="Nhập ghi chú về phác đồ điều trị..."
+                            value={reviewNote}
+                            onChange={(e) => setReviewNote(e.target.value)}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                            Lý do từ chối (nếu có)
+                        </label>
+                        <Input.TextArea
+                            rows={3}
+                            placeholder="Nhập lý do từ chối nếu không đồng ý với phác đồ..."
+                            value={rejectionReason}
+                            onChange={(e) => setRejectionReason(e.target.value)}
+                        />
+                    </div>
+                </div>
+            </Modal>
 
             {/* Success Result Modal */}
             <Modal

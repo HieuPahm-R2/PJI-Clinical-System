@@ -18,7 +18,7 @@ public class SurgeryRequestDTO {
 
     @NotNull(message = "surgeryDate must not be null")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-    @JsonFormat(pattern = "yyyy-MM-dd")
+    @JsonFormat(pattern = "dd-MM-yyyy")
     private LocalDate surgeryDate;
 
     @NotBlank(message = "surgeryType must not be blank")

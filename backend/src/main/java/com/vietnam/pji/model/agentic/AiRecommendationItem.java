@@ -8,8 +8,6 @@ import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.io.Serializable;
-
 @Getter
 @Setter
 @Builder
@@ -17,11 +15,11 @@ import java.io.Serializable;
 @AllArgsConstructor
 @Entity
 @Table(name = "ai_recommendation_items")
-public class AiRecommendationItem extends AbstractEntity<Long> implements Serializable {
+public class AiRecommendationItem extends AbstractEntity<Long> {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "run_id", nullable = false)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private AiRecommendationRun run;
 
     @Enumerated(EnumType.STRING)

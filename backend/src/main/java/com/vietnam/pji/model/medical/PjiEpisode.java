@@ -5,7 +5,6 @@ import com.vietnam.pji.constant.DirectEnum;
 import com.vietnam.pji.model.AbstractEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import java.io.Serializable;
 import java.time.LocalDate;
 
 @Getter
@@ -15,7 +14,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @Entity
 @Table(name = "pji_episodes")
-public class PjiEpisode extends AbstractEntity<Long> implements Serializable {
+public class PjiEpisode extends AbstractEntity<Long> {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "patient_id")

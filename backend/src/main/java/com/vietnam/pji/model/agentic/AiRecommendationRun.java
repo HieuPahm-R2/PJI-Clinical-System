@@ -48,18 +48,6 @@ public class AiRecommendationRun extends AbstractEntity<Long> implements Seriali
     @Column(name = "model_version", length = 50)
     private String modelVersion;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "assessment_json", columnDefinition = "jsonb")
-    private String assessmentJson;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "explanation_json", columnDefinition = "jsonb")
-    private String explanationJson;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "warnings_json", columnDefinition = "jsonb")
-    private String warningsJson;
-
     @Column(name = "latency_ms")
     private Long latencyMs;
 

@@ -23,4 +23,6 @@ public interface AiRecommendationRunRepository extends JpaRepository<AiRecommend
     Optional<AiRecommendationRun> findByRequestId(String requestId);
 
     boolean existsByRequestIdAndStatus(String requestId, RunStatus status);
+
+    long countByEpisodeId(Long episodeId);
 }
