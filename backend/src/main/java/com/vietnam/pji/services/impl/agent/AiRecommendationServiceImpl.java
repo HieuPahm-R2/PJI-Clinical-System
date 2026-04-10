@@ -7,6 +7,7 @@ import com.vietnam.pji.dto.request.AiRecommendationGenerateRequestDTO;
 import com.vietnam.pji.dto.response.AiRecommendationGenerateResponseDTO;
 import com.vietnam.pji.dto.response.AiRecommendationRunDetailDTO;
 import com.vietnam.pji.dto.response.PaginationResultDTO;
+import com.vietnam.pji.exception.BusinessException;
 import com.vietnam.pji.exception.ResourceNotFoundException;
 import com.vietnam.pji.model.agentic.*;
 import com.vietnam.pji.model.medical.PjiEpisode;
@@ -25,10 +26,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class AiRecommendationServiceImpl implements AiRecommendationService {
+
+    private static final int MAX_RUNS_PER_EPISODE = 5;
 
     private final EpisodeRepository episodeRepository;
     private final CaseClinicalSnapshotRepository snapshotRepository;
@@ -44,6 +47,13 @@ public class AiRecommendationServiceImpl implements AiRecommendationService {
     public AiRecommendationRunDetailDTO generateRecommendation(Long episodeId, TriggerType triggerType) {
         PjiEpisode episode = episodeRepository.findById(episodeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Episode not found: " + episodeId));
+
+        // Enforce max runs per episode
+        long runCount = runRepository.countByEpisodeId(episodeId);
+        if (runCount >= MAX_RUNS_PER_EPISODE) {
+            throw new BusinessException("Đã đạt giới hạn " + MAX_RUNS_PER_EPISODE
+                    + " lần gọi AI cho bệnh án này. Không thể tạo thêm.");
+        }
 
         // TX1: Build snapshot + create run
         SnapshotBuildResult buildResult = snapshotAssemblerService.buildSnapshot(episodeId);
@@ -80,6 +90,13 @@ public class AiRecommendationServiceImpl implements AiRecommendationService {
     public AiRecommendationRunDetailDTO generateRecommendationAsync(Long episodeId, TriggerType triggerType) {
         PjiEpisode episode = episodeRepository.findById(episodeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Episode not found: " + episodeId));
+
+        // Enforce max runs per episode
+        long runCount = runRepository.countByEpisodeId(episodeId);
+        if (runCount >= MAX_RUNS_PER_EPISODE) {
+            throw new BusinessException("Đã đạt giới hạn " + MAX_RUNS_PER_EPISODE
+                    + " lần gọi AI cho bệnh án này. Không thể tạo thêm.");
+        }
 
         // Build snapshot + create run (same as sync)
         SnapshotBuildResult buildResult = snapshotAssemblerService.buildSnapshot(episodeId);

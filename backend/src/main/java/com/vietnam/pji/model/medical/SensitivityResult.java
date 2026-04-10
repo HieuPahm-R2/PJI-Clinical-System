@@ -16,11 +16,11 @@ import java.util.Date;
 @AllArgsConstructor
 @Entity
 @Table(name = "sensitivity_results")
-public class SensitivityResult extends AbstractEntity<Long> implements Serializable {
+public class SensitivityResult extends AbstractEntity<Long> {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "culture_id")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private CultureResult culture;
 
     @Column(name = "antibiotic_name", nullable = false, length = 100)
@@ -31,6 +31,5 @@ public class SensitivityResult extends AbstractEntity<Long> implements Serializa
 
     @Column(name = "sensitivity_code", length = 10)
     private String sensitivityCode;
-
 
 }

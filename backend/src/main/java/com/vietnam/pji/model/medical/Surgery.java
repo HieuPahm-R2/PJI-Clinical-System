@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vietnam.pji.model.AbstractEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import java.io.Serializable;
 import java.time.LocalDate;
 
 @Getter
@@ -14,7 +13,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @Entity
 @Table(name = "surgeries")
-public class Surgery extends AbstractEntity<Long> implements Serializable {
+public class Surgery extends AbstractEntity<Long> {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "episode_id", nullable = false)
