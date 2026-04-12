@@ -67,6 +67,10 @@ public class LabResult extends AbstractEntity<Long> implements Serializable {
     private Measurement serumIl6;
 
     @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "leu", columnDefinition = "jsonb")
+    private Measurement leu;
+
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "alpha_defensin", columnDefinition = "jsonb")
     private Measurement alphaDefensin;
 

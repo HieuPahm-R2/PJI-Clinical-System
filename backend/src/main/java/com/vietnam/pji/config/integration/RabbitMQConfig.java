@@ -31,18 +31,14 @@ public class RabbitMQConfig {
     public static final String ROUTING_KEY_CHAT = "ai.chat.request";
     public static final String ROUTING_KEY_CHAT_RESULT = "ai.chat.result";
 
-    // =====================================================================
     // Exchange
-    // =====================================================================
 
     @Bean
     public TopicExchange aiExchange() {
         return new TopicExchange(EXCHANGE);
     }
 
-    // =====================================================================
     // Recommendation queues & bindings
-    // =====================================================================
 
     @Bean
     public Queue recommendationQueue() {
@@ -83,9 +79,7 @@ public class RabbitMQConfig {
                 .with(ROUTING_KEY_RESULT);
     }
 
-    // =====================================================================
     // Chat queues & bindings
-    // =====================================================================
 
     @Bean
     public Queue chatQueue() {
@@ -116,7 +110,6 @@ public class RabbitMQConfig {
 
     // =====================================================================
     // Message converter & template
-    // =====================================================================
 
     @Bean
     public MessageConverter jsonMessageConverter() {

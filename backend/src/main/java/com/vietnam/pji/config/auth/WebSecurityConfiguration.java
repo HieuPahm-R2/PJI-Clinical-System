@@ -36,6 +36,8 @@ public class WebSecurityConfiguration {
                                 "/", "/api/v1/", "/ws/**",
                                 "/api/v1/auth/login", "/api/v1/auth/refresh", "/api/v1/auth/register",
                                 "/storage/**",
+                                "/actuator/health",
+                                "/actuator/prometheus",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"

@@ -21,6 +21,7 @@ public class LabResultRequestDTO {
     private Measurement rbc;
     private Measurement rdw;
     private Measurement ig;
+    private Measurement leu;
     private Measurement mcv;
     private Measurement mch;
     private Measurement crp;
