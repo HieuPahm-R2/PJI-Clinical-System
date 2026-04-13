@@ -1,13 +1,12 @@
 package com.vietnam.pji.model.medical;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.vietnam.pji.dto.response.Measurement;
 import com.vietnam.pji.model.AbstractEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
-import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 
 @Getter
@@ -17,77 +16,25 @@ import java.util.Map;
 @AllArgsConstructor
 @Entity
 @Table(name = "lab_results")
-public class LabResult extends AbstractEntity<Long> implements Serializable {
+public class LabResult extends AbstractEntity<Long> {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "episode_id")
     @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private PjiEpisode episode;
 
-    // Blood markers (systemic inflammation)
-    // Chỉ số máu
+    // Hematology tests stored as JSONB array of test items
+    // Each item: { id, name, value, unit, normalRange }
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "esr", columnDefinition = "jsonb")
-    private Measurement esr;
+    @Column(name = "hematology_tests", columnDefinition = "jsonb")
+    private List<Map<String, Object>> hematologyTests;
 
+    // Fluid analysis tests stored as JSONB array of test items
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "wbc_blood", columnDefinition = "jsonb")
-    private Measurement wbcBlood;
+    @Column(name = "fluid_analysis", columnDefinition = "jsonb")
+    private List<Map<String, Object>> fluidAnalysis;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "neut", columnDefinition = "jsonb")
-    private Measurement neut;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "mono", columnDefinition = "jsonb")
-    private Measurement mono;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "rbc", columnDefinition = "jsonb")
-    private Measurement rbc;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "ig", columnDefinition = "jsonb")
-    private Measurement ig;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "mcv", columnDefinition = "jsonb")
-    private Measurement mcv;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "mch", columnDefinition = "jsonb")
-    private Measurement mch;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "dimer", columnDefinition = "jsonb")
-    private Measurement dimer;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "serum_il6", columnDefinition = "jsonb")
-    private Measurement serumIl6;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "leu", columnDefinition = "jsonb")
-    private Measurement leu;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "alpha_defensin", columnDefinition = "jsonb")
-    private Measurement alphaDefensin;
-
-    // Chỉ số dịch khớp
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "crp", columnDefinition = "jsonb")
-    private Measurement crp;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "synovial_wbc", columnDefinition = "jsonb")
-    private Measurement synovialWbc;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "synovial_pmn", columnDefinition = "jsonb")
-    private Measurement synovialPmn;
-
-    // Biochemical data (JSONB)
+    // Biochemical data (JSONB map of key -> {value, unit})
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "biochemical_data", columnDefinition = "jsonb")
     private Map<String, Object> biochemicalData;

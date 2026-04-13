@@ -18,11 +18,11 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Entity
 @Table(name = "case_clinical_snapshots")
-public class CaseClinicalSnapshot extends AbstractEntity<Long> implements Serializable {
+public class CaseClinicalSnapshot extends AbstractEntity<Long> {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "episode_id", nullable = false)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private PjiEpisode episode;
 
     @Column(name = "snapshot_no")

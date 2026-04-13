@@ -164,15 +164,7 @@ public class EpisodeSnapshotAssemblerServiceImpl implements EpisodeSnapshotAssem
                 List<Map<String, Object>> trendList = new ArrayList<>();
                 // Skip the first (latest) one since it's already in "latest"
                 for (int i = 1; i < trends.size(); i++) {
-                    LabResult lr = trends.get(i);
-                    Map<String, Object> trendItem = new LinkedHashMap<>();
-                    trendItem.put("created_at",
-                            lr.getCreatedAt() != null ? lr.getCreatedAt().toInstant().toString() : null);
-                    trendItem.put("crp", lr.getCrp());
-                    trendItem.put("esr", lr.getEsr());
-                    trendItem.put("wbc_blood", lr.getWbcBlood());
-                    trendItem.put("synovial_wbc", lr.getSynovialWbc());
-                    trendList.add(trendItem);
+                    trendList.add(buildLabResultMap(trends.get(i)));
                 }
                 labResults.put("historical_trends", trendList);
             }
@@ -281,49 +273,16 @@ public class EpisodeSnapshotAssemblerServiceImpl implements EpisodeSnapshotAssem
         map.put("lab_id", lr.getId());
         map.put("created_at", lr.getCreatedAt() != null ? lr.getCreatedAt().toInstant().toString() : null);
 
-        Map<String, Object> inflammatory = new LinkedHashMap<>();
-        inflammatory.put("esr", lr.getEsr());
-        inflammatory.put("esr_unit", "mm/h");
-        inflammatory.put("wbc_blood", lr.getWbcBlood());
-        inflammatory.put("wbc_blood_unit", "x10^9/L");
-        inflammatory.put("neut", lr.getNeut());
-        inflammatory.put("neut_unit", "%");
-        inflammatory.put("mono", lr.getMono());
-        inflammatory.put("mono_unit", "%");
-        inflammatory.put("crp", lr.getCrp());
-        inflammatory.put("crp_unit", "mg/L");
-        inflammatory.put("d_dimer", lr.getDimer());
-        inflammatory.put("d_dimer_unit", "mg/L FEU");
-        inflammatory.put("serum_il6", lr.getSerumIl6());
-        inflammatory.put("serum_il6_unit", "pg/mL");
-        inflammatory.put("alpha_defensin", lr.getAlphaDefensin());
-        map.put("inflammatory_markers_blood", inflammatory);
+        if (lr.getHematologyTests() != null) {
+            map.put("hematology_tests", lr.getHematologyTests());
+        }
 
-        Map<String, Object> hematology = new LinkedHashMap<>();
-        hematology.put("rbc", lr.getRbc());
-        hematology.put("rbc_unit", "x10^12/L");
-        hematology.put("ig", lr.getIg());
-        hematology.put("ig_unit", "%");
-        hematology.put("mcv", lr.getMcv());
-        hematology.put("mcv_unit", "fL");
-        hematology.put("mch", lr.getMch());
-        hematology.put("mch_unit", "pg");
-        map.put("hematology", hematology);
+        if (lr.getFluidAnalysis() != null) {
+            map.put("fluid_analysis", lr.getFluidAnalysis());
+        }
 
-        Map<String, Object> synovial = new LinkedHashMap<>();
-        synovial.put("synovial_wbc", lr.getSynovialWbc());
-        synovial.put("synovial_wbc_unit", "cells/\u03bcL");
-        synovial.put("synovial_pmn", lr.getSynovialPmn());
-        synovial.put("synovial_pmn_unit", "%");
-        map.put("synovial_fluid", synovial);
-
-        // biochemical_data from JSONB
         if (lr.getBiochemicalData() != null) {
-            try {
-                map.put("biochemical_data", lr.getBiochemicalData());
-            } catch (Exception e) {
-                log.warn("Failed to parse biochemical_data for lab_id={}", lr.getId());
-            }
+            map.put("biochemical_data", lr.getBiochemicalData());
         }
 
         return map;
