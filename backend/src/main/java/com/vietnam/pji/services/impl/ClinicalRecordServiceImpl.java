@@ -1,4 +1,4 @@
-package com.vietnam.pji.services.impl.medical;
+package com.vietnam.pji.services.impl;
 
 import com.vietnam.pji.dto.request.ClinicalRecordRequestDTO;
 import com.vietnam.pji.dto.response.PaginationResultDTO;
@@ -8,11 +8,13 @@ import com.vietnam.pji.model.medical.PjiEpisode;
 import com.vietnam.pji.repository.EpisodeRepository;
 import com.vietnam.pji.repository.medical.ClinicalRecordRepository;
 import com.vietnam.pji.services.ClinicalRecordService;
+import com.vietnam.pji.services.RedisService;
 import com.vietnam.pji.utils.mapper.ClinicalRecordMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +23,7 @@ public class ClinicalRecordServiceImpl implements ClinicalRecordService {
     private final ClinicalRecordRepository clinicalRecordRepository;
     private final EpisodeRepository episodeRepository;
     private final ClinicalRecordMapper clinicalRecordMapper;
+    private final RedisService redisService;
 
     @Override
     public ClinicalRecord create(ClinicalRecordRequestDTO data) {
@@ -28,7 +31,9 @@ public class ClinicalRecordServiceImpl implements ClinicalRecordService {
                 .orElseThrow(() -> new ResourceNotFoundException("Episode not found"));
         ClinicalRecord record = clinicalRecordMapper.toEntity(data);
         record.setEpisode(episode);
-        return clinicalRecordRepository.save(record);
+        ClinicalRecord saved = clinicalRecordRepository.save(record);
+        redisService.evictSnapshotCache(data.getEpisodeId());
+        return saved;
     }
 
     @Override
@@ -36,7 +41,9 @@ public class ClinicalRecordServiceImpl implements ClinicalRecordService {
         ClinicalRecord record = clinicalRecordRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Clinical record not found"));
         clinicalRecordMapper.update(data, record);
-        return clinicalRecordRepository.save(record);
+        ClinicalRecord saved = clinicalRecordRepository.save(record);
+        redisService.evictSnapshotCache(record.getEpisode().getId());
+        return saved;
     }
 
     @Override
@@ -46,11 +53,13 @@ public class ClinicalRecordServiceImpl implements ClinicalRecordService {
     }
 
     @Override
+    @Transactional
     public void delete(Long id) {
-        if (!clinicalRecordRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Clinical record not found");
-        }
+        ClinicalRecord record = clinicalRecordRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Clinical record not found"));
+        Long episodeId = record.getEpisode().getId();
         clinicalRecordRepository.deleteById(id);
+        redisService.evictSnapshotCache(episodeId);
     }
 
     @Override

@@ -8,11 +8,13 @@ import com.vietnam.pji.model.medical.PjiEpisode;
 import com.vietnam.pji.repository.EpisodeRepository;
 import com.vietnam.pji.repository.ImageResultRepository;
 import com.vietnam.pji.services.ImageResultService;
+import com.vietnam.pji.services.RedisService;
 import com.vietnam.pji.utils.mapper.ImageResultMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +23,7 @@ public class ImageResultServiceImpl implements ImageResultService {
     private final ImageResultRepository imageResultRepository;
     private final EpisodeRepository episodeRepository;
     private final ImageResultMapper imageResultMapper;
+    private final RedisService redisService;
 
     @Override
     public ImageResult create(ImageResultRequestDTO data) {
@@ -28,7 +31,9 @@ public class ImageResultServiceImpl implements ImageResultService {
                 .orElseThrow(() -> new ResourceNotFoundException("Episode not found"));
         ImageResult imageResult = imageResultMapper.toEntity(data);
         imageResult.setEpisode(episode);
-        return imageResultRepository.save(imageResult);
+        ImageResult saved = imageResultRepository.save(imageResult);
+        redisService.evictSnapshotCache(data.getEpisodeId());
+        return saved;
     }
 
     @Override
@@ -36,7 +41,9 @@ public class ImageResultServiceImpl implements ImageResultService {
         ImageResult imageResult = imageResultRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Image result not found"));
         imageResultMapper.update(data, imageResult);
-        return imageResultRepository.save(imageResult);
+        ImageResult saved = imageResultRepository.save(imageResult);
+        redisService.evictSnapshotCache(imageResult.getEpisode().getId());
+        return saved;
     }
 
     @Override
@@ -46,11 +53,13 @@ public class ImageResultServiceImpl implements ImageResultService {
     }
 
     @Override
+    @Transactional
     public void delete(Long id) {
-        if (!imageResultRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Image result not found");
-        }
+        ImageResult imageResult = imageResultRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Image result not found"));
+        Long episodeId = imageResult.getEpisode().getId();
         imageResultRepository.deleteById(id);
+        redisService.evictSnapshotCache(episodeId);
     }
 
     @Override

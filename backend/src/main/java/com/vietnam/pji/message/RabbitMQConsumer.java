@@ -7,6 +7,8 @@ import com.vietnam.pji.constant.*;
 import com.vietnam.pji.dto.response.RabbitMQRecommendationResultMessage;
 import com.vietnam.pji.model.agentic.*;
 import com.vietnam.pji.repository.*;
+import com.vietnam.pji.services.PendingLabTaskService;
+import com.vietnam.pji.services.RedisService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -28,6 +30,8 @@ public class RabbitMQConsumer {
     private final AiRecommendationItemRepository itemRepository;
     private final AiRagCitationRepository citationRepository;
     private final ObjectMapper objectMapper;
+    private final PendingLabTaskService pendingLabTaskService;
+    private final RedisService redisService;
 
     @RabbitListener(queues = RabbitMQConfig.RECOMMENDATION_RESULT_QUEUE)
     @Transactional
@@ -102,7 +106,15 @@ public class RabbitMQConsumer {
         // run.getId(), e);
         // }
 
+        // Store data completeness on the run for frontend display
+        if (result.getDataCompleteness() != null) {
+            run.setDataCompletenessJson(result.getDataCompleteness());
+        }
+
         runRepository.save(run);
+
+        // Auto-create pending lab tasks from completeness missing items
+        createPendingTasksFromCompleteness(run, result.getDataCompleteness());
 
         // Save items
         Map<String, AiRecommendationItem> itemKeyMap = new HashMap<>();
@@ -151,6 +163,9 @@ public class RabbitMQConsumer {
             }
         }
 
+        // Evict run detail cache so next poll gets fresh data
+        redisService.evictRunDetail(run.getId());
+
         log.info("Successfully saved AI result for runId={}: {} items, {} citations",
                 run.getId(),
                 result.getItems().size(),
@@ -172,6 +187,37 @@ public class RabbitMQConsumer {
         } catch (Exception e) {
             log.warn("Unknown source type: {}", sourceType);
             return SourceType.GUIDELINE;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void createPendingTasksFromCompleteness(AiRecommendationRun run,
+                                                    Map<String, Object> dataCompleteness) {
+        if (dataCompleteness == null) return;
+
+        List<Map<String, Object>> missingItems =
+                (List<Map<String, Object>>) dataCompleteness.get("missing_items");
+        if (missingItems == null || missingItems.isEmpty()) return;
+
+        try {
+            Long episodeId = run.getEpisode().getId();
+            Long patientId = run.getEpisode().getPatient() != null
+                    ? run.getEpisode().getPatient().getId() : null;
+            // Assign to the user who created this run
+            Long userId = null;
+            if (run.getCreatedBy() != null) {
+                // createdBy stores the email; we pass null for now — the controller
+                // endpoint for manual creation handles userId. For async runs the
+                // frontend will call the create-from-completeness endpoint with the
+                // logged-in user, so we keep this as a fallback.
+                userId = null;
+            }
+
+            pendingLabTaskService.createFromCompleteness(
+                    episodeId, patientId, userId, run.getId(), missingItems);
+        } catch (Exception e) {
+            log.warn("Failed to create pending tasks from completeness for runId={}: {}",
+                    run.getId(), e.getMessage());
         }
     }
 }

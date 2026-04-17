@@ -8,6 +8,7 @@ import com.vietnam.pji.repository.*;
 import com.vietnam.pji.repository.medical.ClinicalRecordRepository;
 import com.vietnam.pji.repository.medical.CultureResultRepository;
 import com.vietnam.pji.services.EpisodeSnapshotAssemblerService;
+import com.vietnam.pji.services.RedisService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,9 +33,37 @@ public class EpisodeSnapshotAssemblerServiceImpl implements EpisodeSnapshotAssem
     private final CultureResultRepository cultureResultRepository;
     private final SensitivityResultRepository sensitivityResultRepository;
     private final ObjectMapper objectMapper;
+    private final RedisService redisService;
+
+    private static final long SNAPSHOT_CACHE_TTL = 1800; // 30 minutes
 
     @Override
     public SnapshotBuildResult buildSnapshot(Long episodeId) {
+        // Check cache first
+        try {
+            String cached = redisService.getCachedSnapshot(episodeId);
+            if (cached != null) {
+                log.debug("Snapshot cache hit for episodeId={}", episodeId);
+                return objectMapper.readValue(cached, SnapshotBuildResult.class);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to read snapshot cache for episodeId={}, building from DB", episodeId);
+        }
+
+        SnapshotBuildResult result = buildSnapshotFromDb(episodeId);
+
+        // Cache the result
+        try {
+            redisService.cacheSnapshot(episodeId, objectMapper.writeValueAsString(result), SNAPSHOT_CACHE_TTL);
+            log.debug("Snapshot cached for episodeId={}", episodeId);
+        } catch (Exception e) {
+            log.warn("Failed to cache snapshot for episodeId={}", episodeId);
+        }
+
+        return result;
+    }
+
+    private SnapshotBuildResult buildSnapshotFromDb(Long episodeId) {
         PjiEpisode episode = episodeRepository.findById(episodeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Episode not found: " + episodeId));
 

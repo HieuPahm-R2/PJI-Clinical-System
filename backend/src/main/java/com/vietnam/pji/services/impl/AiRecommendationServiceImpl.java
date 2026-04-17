@@ -1,4 +1,4 @@
-package com.vietnam.pji.services.impl.agent;
+package com.vietnam.pji.services.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,6 +18,7 @@ import com.vietnam.pji.services.AiRecommendationService;
 import com.vietnam.pji.services.AiServiceClient;
 import com.vietnam.pji.services.EpisodeSnapshotAssemblerService;
 import com.vietnam.pji.services.EpisodeSnapshotAssemblerService.SnapshotBuildResult;
+import com.vietnam.pji.services.RedisService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -32,6 +33,7 @@ import java.util.*;
 public class AiRecommendationServiceImpl implements AiRecommendationService {
 
     private static final int MAX_RUNS_PER_EPISODE = 5;
+    private static final long RUN_DETAIL_CACHE_TTL = 1800; // 30 minutes
 
     private final EpisodeRepository episodeRepository;
     private final CaseClinicalSnapshotRepository snapshotRepository;
@@ -42,6 +44,7 @@ public class AiRecommendationServiceImpl implements AiRecommendationService {
     private final AiServiceClient aiServiceClient;
     private final RabbitMQPublisher rabbitMQPublisher;
     private final ObjectMapper objectMapper;
+    private final RedisService redisService;
 
     @Override
     public AiRecommendationRunDetailDTO generateRecommendation(Long episodeId, TriggerType triggerType) {
@@ -276,17 +279,45 @@ public class AiRecommendationServiceImpl implements AiRecommendationService {
     @Override
     @Transactional(readOnly = true)
     public AiRecommendationRunDetailDTO getRunDetail(Long runId) {
+        // Check cache for terminal runs
+        try {
+            String cached = redisService.getCachedRunDetail(runId);
+            if (cached != null) {
+                log.debug("Run detail cache hit for runId={}", runId);
+                return objectMapper.readValue(cached, AiRecommendationRunDetailDTO.class);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to read run detail cache for runId={}, loading from DB", runId);
+        }
+
         AiRecommendationRun run = runRepository.findById(runId)
                 .orElseThrow(() -> new ResourceNotFoundException("Run not found: " + runId));
 
         List<AiRecommendationItem> items = itemRepository.findByRunIdOrderByPriorityOrderAsc(runId);
         List<AiRagCitation> citations = citationRepository.findByRunId(runId);
 
-        return AiRecommendationRunDetailDTO.builder()
+        AiRecommendationRunDetailDTO detail = AiRecommendationRunDetailDTO.builder()
                 .run(run)
                 .items(items)
                 .citations(citations)
                 .build();
+
+        // Only cache terminal statuses (immutable data)
+        if (isTerminalStatus(run.getStatus())) {
+            try {
+                redisService.cacheRunDetail(runId, objectMapper.writeValueAsString(detail), RUN_DETAIL_CACHE_TTL);
+                log.debug("Run detail cached for runId={}", runId);
+            } catch (Exception e) {
+                log.warn("Failed to cache run detail for runId={}", runId);
+            }
+        }
+
+        return detail;
+    }
+
+    private boolean isTerminalStatus(RunStatus status) {
+        return status == RunStatus.SUCCESS || status == RunStatus.FAILED
+                || status == RunStatus.PARTIAL || status == RunStatus.TIMEOUT;
     }
 
     @Override

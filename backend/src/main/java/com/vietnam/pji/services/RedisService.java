@@ -49,4 +49,30 @@ public interface RedisService {
      * @return true nếu token bị blacklist
      */
     boolean isAccessTokenBlacklisted(String accessToken);
+
+    // ===== User Permission Caching =====
+
+    void cacheUserPermissions(String email, String permissionsJson, long ttlSeconds);
+
+    String getCachedUserPermissions(String email);
+
+    void evictUserPermissions(String email);
+
+    void evictAllUserPermissions();
+
+    // ===== Episode Snapshot Caching =====
+
+    void cacheSnapshot(Long episodeId, String snapshotJson, long ttlSeconds);
+
+    String getCachedSnapshot(Long episodeId);
+
+    void evictSnapshotCache(Long episodeId);
+
+    // ===== AI Run Detail Caching =====
+
+    void cacheRunDetail(Long runId, String detailJson, long ttlSeconds);
+
+    String getCachedRunDetail(Long runId);
+
+    void evictRunDetail(Long runId);
 }
