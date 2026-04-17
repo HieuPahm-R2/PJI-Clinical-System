@@ -570,18 +570,6 @@
       "cited_for": "Hệ thống tính điểm chẩn đoán PJI, ngưỡng phân loại Infected/Inconclusive/Not Infected"
     },
     {
-      "description": "Citation cho DIAGNOSTIC_TEST - Alpha-Defensin evidence",
-      "id": "cit-uuid-002",
-      "run_id": "run-uuid-xxx",
-      "item_id": "item-uuid-diagnostic-test",
-      "source_type": "META_ANALYSIS",
-      "source_title": "Alpha-Defensin as a Synovial Fluid Biomarker for Periprosthetic Joint Infection: A Systematic Review and Meta-Analysis",
-      "source_uri": "https://doi.org/10.1016/j.arth.2019.06.023",
-      "snippet": "Synovial fluid alpha-defensin demonstrates pooled sensitivity 97% and specificity 96% for PJI diagnosis.",
-      "relevance_score": 0.9500,
-      "cited_for": "Giá trị chẩn đoán Alpha-Defensin dương tính trong context bệnh nhân này"
-    },
-    {
       "description": "Citation cho SURGERY_PROCEDURE item - Two-stage strategy",
       "id": "cit-uuid-003",
       "run_id": "run-uuid-xxx",
@@ -616,18 +604,6 @@
       "snippet": "AUC/MIC-guided dosing (target AUC 400-600 for MIC ≤1) is recommended over trough-only monitoring for serious MRSA infections.",
       "relevance_score": 0.9300,
       "cited_for": "Hướng dẫn liều Vancomycin AUC/MIC cho nhiễm MRSA nặng, áp dụng cho phác đồ giai đoạn tấn công IV"
-    },
-    {
-      "description": "Citation cho LOCAL_ANTIBIOTIC item - Cement spacer antibiotic loading",
-      "id": "cit-uuid-006",
-      "run_id": "run-uuid-xxx",
-      "item_id": "item-uuid-local-abx",
-      "source_type": "SYSTEMATIC_REVIEW",
-      "source_title": "Antibiotic-Loaded Bone Cement in PJI Treatment: A Systematic Review of Elution Characteristics and Clinical Outcomes",
-      "source_uri": "https://doi.org/10.1302/0301-620X.102B10.BJJ-2020-0369",
-      "snippet": "High-dose antibiotic loading (>2g vancomycin per 40g PMMA) provides effective local elution for 4-6 weeks with low systemic toxicity.",
-      "relevance_score": 0.9200,
-      "cited_for": "Liều và tỉ lệ trộn kháng sinh trong xi măng PMMA cho spacer, hiệu quả elution tại chỗ"
     }
   ]
 }

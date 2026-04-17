@@ -9,6 +9,7 @@ import com.vietnam.pji.model.auth.Role;
 import com.vietnam.pji.model.auth.User;
 import com.vietnam.pji.repository.RoleRepository;
 import com.vietnam.pji.repository.UserRepository;
+import com.vietnam.pji.services.RedisService;
 import com.vietnam.pji.services.UserService;
 import com.vietnam.pji.utils.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class UserServiceImpl implements UserService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
+    private final RedisService redisService;
 
     @Override
     public UserDetailResponse create(UserRequestDTO data) {
@@ -53,7 +55,9 @@ public class UserServiceImpl implements UserService {
             Role role = roleRepository.findById(data.getRole().getId()).orElse(null);
             user.setRole(role);
         }
-        return userMapper.toUserDetailResponse(userRepository.save(user));
+        UserDetailResponse response = userMapper.toUserDetailResponse(userRepository.save(user));
+        redisService.evictUserPermissions(user.getEmail());
+        return response;
     }
 
     @Override
@@ -84,9 +88,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void delete(Long id) {
-        if (!userRepository.existsById(id)) {
-            throw new ResourceNotFoundException("User not found");
-        }
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        redisService.evictUserPermissions(user.getEmail());
         userRepository.deleteById(id);
     }
 

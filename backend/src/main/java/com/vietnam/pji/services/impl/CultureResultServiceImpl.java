@@ -8,11 +8,13 @@ import com.vietnam.pji.model.medical.PjiEpisode;
 import com.vietnam.pji.repository.EpisodeRepository;
 import com.vietnam.pji.repository.medical.CultureResultRepository;
 import com.vietnam.pji.services.CultureResultService;
+import com.vietnam.pji.services.RedisService;
 import com.vietnam.pji.utils.mapper.CultureResultMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +23,7 @@ public class CultureResultServiceImpl implements CultureResultService {
     private final CultureResultRepository cultureResultRepository;
     private final EpisodeRepository episodeRepository;
     private final CultureResultMapper cultureResultMapper;
+    private final RedisService redisService;
 
     @Override
     public CultureResult create(CultureResultRequestDTO data) {
@@ -28,7 +31,9 @@ public class CultureResultServiceImpl implements CultureResultService {
                 .orElseThrow(() -> new ResourceNotFoundException("Episode not found"));
         CultureResult cultureResult = cultureResultMapper.toEntity(data);
         cultureResult.setEpisode(episode);
-        return cultureResultRepository.save(cultureResult);
+        CultureResult saved = cultureResultRepository.save(cultureResult);
+        redisService.evictSnapshotCache(data.getEpisodeId());
+        return saved;
     }
 
     @Override
@@ -36,7 +41,9 @@ public class CultureResultServiceImpl implements CultureResultService {
         CultureResult cultureResult = cultureResultRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Culture result not found"));
         cultureResultMapper.update(data, cultureResult);
-        return cultureResultRepository.save(cultureResult);
+        CultureResult saved = cultureResultRepository.save(cultureResult);
+        redisService.evictSnapshotCache(cultureResult.getEpisode().getId());
+        return saved;
     }
 
     @Override
@@ -46,11 +53,13 @@ public class CultureResultServiceImpl implements CultureResultService {
     }
 
     @Override
+    @Transactional
     public void delete(Long id) {
-        if (!cultureResultRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Culture result not found");
-        }
+        CultureResult cultureResult = cultureResultRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Culture result not found"));
+        Long episodeId = cultureResult.getEpisode().getId();
         cultureResultRepository.deleteById(id);
+        redisService.evictSnapshotCache(episodeId);
     }
 
     @Override

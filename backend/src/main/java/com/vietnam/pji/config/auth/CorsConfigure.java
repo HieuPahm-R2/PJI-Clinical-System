@@ -1,7 +1,9 @@
 package com.vietnam.pji.config.auth;
 
 import java.util.Arrays;
+import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
@@ -10,12 +12,18 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 public class CorsConfigure {
+    @Value("${app.cors.allowed-origin-patterns:http://localhost:3000,http://localhost:4173,http://localhost:5173}")
+    private String allowedOriginPatterns;
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Set only one origin to avoid multiple Access-Control-Allow-Origin headers
-        configuration.setAllowedOriginPatterns(
-                Arrays.asList("http://localhost:3000", "http://localhost:4173","https://prod29.io.vn","https://www.prod29.io.vn", "http://localhost:5173"));
+        List<String> origins = Arrays.stream(allowedOriginPatterns.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isBlank())
+                .toList();
+
+        configuration.setAllowedOriginPatterns(origins);
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS")); // Allowed
         // methods
         configuration.setAllowedHeaders(
@@ -29,8 +37,6 @@ public class CorsConfigure {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration); // Apply this configuration to all paths
 
-        System.out.println(
-                "CORS Configuration loaded with origins: " + configuration.getAllowedOriginPatterns());
         return source;
     }
 }

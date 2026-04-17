@@ -8,6 +8,7 @@ import com.vietnam.pji.model.medical.PjiEpisode;
 import com.vietnam.pji.repository.EpisodeRepository;
 import com.vietnam.pji.repository.MedicalHistoryRepository;
 import com.vietnam.pji.services.MedicalHistoryService;
+import com.vietnam.pji.services.RedisService;
 import com.vietnam.pji.utils.mapper.MedicalHistoryMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ public class MedicalHistoryServiceImpl implements MedicalHistoryService {
     private final MedicalHistoryRepository medicalHistoryRepository;
     private final EpisodeRepository episodeRepository;
     private final MedicalHistoryMapper medicalHistoryMapper;
+    private final RedisService redisService;
 
     @Override
     public MedicalHistory create(Long episodeId, MedicalHistoryRequestDTO data) {
@@ -30,7 +32,9 @@ public class MedicalHistoryServiceImpl implements MedicalHistoryService {
 
         MedicalHistory history = medicalHistoryMapper.toEntity(data);
         history.setEpisode(episode);
-        return medicalHistoryRepository.save(history);
+        MedicalHistory saved = medicalHistoryRepository.save(history);
+        redisService.evictSnapshotCache(episodeId);
+        return saved;
     }
 
     @Override
@@ -38,7 +42,9 @@ public class MedicalHistoryServiceImpl implements MedicalHistoryService {
         MedicalHistory history = medicalHistoryRepository.findByEpisodeId(episodeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Medical history not found for this episode"));
         medicalHistoryMapper.update(data, history);
-        return medicalHistoryRepository.save(history);
+        MedicalHistory saved = medicalHistoryRepository.save(history);
+        redisService.evictSnapshotCache(episodeId);
+        return saved;
     }
 
     @Override

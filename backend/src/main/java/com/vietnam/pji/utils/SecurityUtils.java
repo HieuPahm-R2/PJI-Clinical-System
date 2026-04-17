@@ -2,6 +2,7 @@ package com.vietnam.pji.utils;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Map;
 import java.util.Optional;
 
 import javax.crypto.SecretKey;
@@ -60,6 +61,22 @@ public class SecurityUtils {
     public static Optional<String> getCurrentUserLogin() {
         SecurityContext securityContext = SecurityContextHolder.getContext();
         return Optional.ofNullable(extractPrincipal(securityContext.getAuthentication()));
+    }
+
+    /**
+     * @return the ID of the current authenticated user, extracted from the JWT "user account" claim.
+     */
+    @SuppressWarnings("unchecked")
+    public static Long getCurrentUserId() {
+        SecurityContext ctx = SecurityContextHolder.getContext();
+        Authentication auth = ctx.getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof Jwt jwt) {
+            Map<String, Object> userAccount = jwt.getClaim("user account");
+            if (userAccount != null && userAccount.get("id") != null) {
+                return Long.valueOf(userAccount.get("id").toString());
+            }
+        }
+        return null;
     }
 
     /**

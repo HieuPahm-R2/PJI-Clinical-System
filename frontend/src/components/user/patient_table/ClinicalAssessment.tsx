@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Form, Input, Select, InputNumber, Checkbox } from 'antd';
+import { Form, Input, Select, InputNumber, Checkbox, message, Modal } from 'antd';
 import { useClinicForm } from '@/redux/hook';
 import { ILabResult, IClinicalRecord, ICultureResult, IImageResult, IPatient } from '@/types/backend';
 import { TestItem } from '@/types/types';
@@ -24,9 +24,11 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({
 }) => {
   const { form: clinicForm, setForm } = useClinicForm();
   const [uploading, setUploading] = useState(false);
-  const [antForm] = Form.useForm();
+  const [imageTypeModalOpen, setImageTypeModalOpen] = useState(false);
+  const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
+  const [selectedImageType, setSelectedImageType] = useState('X-ray');
 
-  // Populate clinicalRecord from API
+  // Populate clinicalRecord from API, or reset when switching episodes
   useEffect(() => {
     if (clinicalRecord) {
       setForm((prev) => ({
@@ -51,49 +53,41 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({
           notations: clinicalRecord.notations ?? '',
         },
       }));
-
-      // Sync to Ant Form
-      antForm.setFieldsValue({
-        illnessOnsetDate: clinicalRecord.illnessOnsetDate ?? '',
-        bmi: clinicalRecord.bmi,
-        suspectedInfectionType: clinicalRecord.suspectedInfectionType ?? '',
-        softTissue: clinicalRecord.softTissue ?? '',
-        implantStability: clinicalRecord.implantStability ?? '',
-        daysSinceIndexArthroplasty: clinicalRecord.daysSinceIndexArthroplasty,
-        prosthesisJoint: clinicalRecord.prosthesisJoint ?? '',
-        notations: clinicalRecord.notations ?? '',
-      });
+    } else {
+      setForm((prev) => ({
+        ...prev,
+        clinicalRecord: {},
+      }));
     }
-  }, [clinicalRecord, setForm, antForm]);
+  }, [clinicalRecord, setForm]);
 
-  // Populate lab tests from API
+  // Populate lab tests from API (JSONB arrays)
   useEffect(() => {
     if (labResults && labResults.length > 0) {
       const lab = labResults[0];
       setForm((prev) => {
-        const setVal = (tests: TestItem[], name: string, value?: number) =>
-          tests.map((t) =>
-            t.name.toLowerCase() === name.toLowerCase() ? { ...t, result: value != null ? String(value) : '' } : t
-          );
+        // Merge backend JSONB items into default TestItem[] by id, preserving defaults for missing items
+        const mergeTests = (defaults: TestItem[], backendItems?: { id: string; name: string; value?: number | null; unit: string; normalRange: string }[]) => {
+          if (!backendItems || backendItems.length === 0) return defaults;
+          const backendMap = new Map(backendItems.map(item => [item.id, item]));
+          // Update existing defaults with backend values
+          const merged = defaults.map(d => {
+            const b = backendMap.get(d.id);
+            if (b) {
+              backendMap.delete(d.id);
+              return { ...d, result: b.value != null ? String(b.value) : '', unit: b.unit || d.unit, normalRange: b.normalRange || d.normalRange };
+            }
+            return d;
+          });
+          // Append extra items that were dynamically added by the user
+          backendMap.forEach(b => {
+            merged.push({ id: b.id, name: b.name, result: b.value != null ? String(b.value) : '', unit: b.unit, normalRange: b.normalRange });
+          });
+          return merged;
+        };
 
-        let hTests = [...prev.hematologyTests];
-        if (lab.wbcBlood?.value != null) hTests = setVal(hTests, 'wbc', lab.wbcBlood.value);
-        if (lab.neut?.value != null) hTests = setVal(hTests, '%NEUT', lab.neut.value);
-        if (lab.mono?.value != null) hTests = setVal(hTests, '%MONO', lab.mono.value);
-        if (lab.esr?.value != null) hTests = setVal(hTests, 'Máu lắng', lab.esr.value);
-        if (lab.rbc?.value != null) hTests = setVal(hTests, 'RBC', lab.rbc.value);
-        if (lab.mcv?.value != null) hTests = setVal(hTests, 'MCV', lab.mcv.value);
-        if (lab.mch?.value != null) hTests = setVal(hTests, 'MCH', lab.mch.value);
-        if (lab.rdw?.value != null) hTests = setVal(hTests, 'RDW-CV', lab.rdw.value);
-        if (lab.ig?.value != null) hTests = setVal(hTests, 'IG%', lab.ig.value);
-        if (lab.dimer?.value != null) hTests = setVal(hTests, 'D-dimer', lab.dimer.value);
-        if (lab.serumIl6?.value != null) hTests = setVal(hTests, 'Serum IL-6', lab.serumIl6.value);
-        if (lab.alphaDefensin?.value != null) hTests = setVal(hTests, 'Alpha Defensin', lab.alphaDefensin.value);
-
-        let fTests = [...prev.fluidAnalysis];
-        if (lab.synovialWbc?.value != null) fTests = setVal(fTests, 'Bạch cầu (Dịch)', lab.synovialWbc.value);
-        if (lab.crp?.value != null) fTests = setVal(fTests, 'Định lượng CRP (Dịch)', lab.crp.value);
-        if (lab.synovialPmn?.value != null) fTests = setVal(fTests, '%PMN (Dịch)', lab.synovialPmn.value);
+        const hTests = mergeTests(prev.hematologyTests, lab.hematologyTests as any);
+        const fTests = mergeTests(prev.fluidAnalysis, lab.fluidAnalysis as any);
 
         let bTests = [...prev.biochemistryTests];
         if (lab.biochemicalData) {
@@ -230,19 +224,10 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({
 
   return (
     <>
-      {mode === 'wizard' && (
-        <header className="flex-shrink-0 bg-white border-b border-slate-200 px-8 py-5 flex items-center justify-between z-10">
-          <div>
-            <div className="flex items-center gap-3">
-              <span className="text-slate-800 text-md font-mono bg-slate-100 px-2 py-0.5 rounded">Du lieu xet nghiem</span>
-            </div>
-            <button className="text-slate-900 bg-green-400 mt-1 flex items-center gap-2 rounded font-mono px-2 py-1 font-bold hover:bg-cyan-400">
-              <span className="material-symbols-outlined text-md">accessibility_new</span>
-              Import nhanh
-            </button>
-          </div>
-        </header>
-      )}
+      <button className="text-slate-900 bg-green-400 mt-1 flex items-center gap-2 rounded font-mono px-2 py-1 font-bold hover:bg-cyan-400">
+        <span className="material-symbols-outlined text-md">accessibility_new</span>
+        Import nhanh
+      </button>
 
       <div className="flex-1 overflow-y-auto p-8 bg-slate-50/50">
         <div className="max-w-7xl mx-auto h-full">
@@ -294,10 +279,9 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({
                     Khám lâm sàng chi tiết
                   </h3>
                 </div>
-                <Form form={antForm} layout="vertical" className="p-6">
+                <Form layout="vertical" className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <Form.Item
-                      name="illnessOnsetDate"
                       label={<span className="text-sm font-medium text-slate-700">Ngày khởi phát triệu chứng</span>}
                     >
                       <Input
@@ -308,9 +292,9 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({
                       />
                       <div className="flex flex-col gap-1.5">
                         <span className="text-xs text-slate-500">
-                          Phan loai:{' '}
+                          Phân loại:{' '}
                           <span className={`font-bold ${clinicForm.isAcute ? 'text-danger' : 'text-warning'}`}>
-                            {clinicForm.isAcute ? 'CAP TINH (<3 tuan)' : 'MAN TINH (>3 tuan)'}
+                            {clinicForm.isAcute ? 'Cấp tính (<3 tuần)' : 'Mãn tính (>3 tuần)'}
                           </span>
                         </span>
                       </div>
@@ -318,9 +302,7 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({
 
 
                     <Form.Item
-                      name="bmi"
                       label={<span className="text-sm font-medium text-slate-700">BMI</span>}
-                      rules={[{ type: 'number', message: 'Vui long nhap so hop le' }]}
                     >
                       <InputNumber
                         step={0.01}
@@ -333,7 +315,6 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({
                     </Form.Item>
 
                     <Form.Item
-                      name="suspectedInfectionType"
                       label={<span className="text-sm font-medium text-slate-700">Loại nhiễm trùng nghi ngờ</span>}
                     >
                       <Select
@@ -346,18 +327,17 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({
                           { value: 'DELAYED', label: 'Nhiễm trùng muộn / trì hoãn' },
                           { value: 'LATE_HEMATOGENOUS', label: 'Nhiễm trùng đường máu (hơn 24 tháng)' },
                           { value: 'ACUTE_HEMATOGENOUS', label: 'Nhiễm trùng cấp đường máu' },
-                          { value: 'CHRONIC', label: 'Nhiem trung man tinh' },
-                          { value: 'UNKNOWN', label: 'Chua ro' },
+                          { value: 'CHRONIC', label: 'Nhiễm trung mãn tính' },
+                          { value: 'UNKNOWN', label: 'Chưa rõ' },
                         ]}
                       />
                     </Form.Item>
 
                     <Form.Item
-                      name="softTissue"
-                      label={<span className="text-sm font-medium text-slate-700">Tinh trang mo mem</span>}
+                      label={<span className="text-sm font-medium text-slate-700">Tình trạng mô mềm</span>}
                     >
                       <Input
-                        placeholder="Vi du:"
+                        placeholder="Ví dụ:"
                         value={clinicForm.clinicalRecord.softTissue ?? ''}
                         onChange={(e) => handleClinicalRecordChange('softTissue', e.target.value)}
                         className="h-11 rounded-lg"
@@ -365,7 +345,6 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({
                     </Form.Item>
 
                     <Form.Item
-                      name="implantStability"
                       label={<span className="text-sm font-medium text-slate-700">Độ ổn định cấy ghép</span>}
                     >
                       <Select
@@ -374,18 +353,16 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({
                         placeholder="Chọn tình trạng"
                         className="h-11 rounded-lg"
                         options={[
-                          { value: 'stable', label: 'On dinh' },
-                          { value: 'loose', label: 'Long leo' },
-                          { value: 'slightly_loose', label: 'Hoi long leo' },
-                          { value: 'unknown', label: 'Chua ro' },
+                          { value: 'STABLE', label: 'Ổn định' },
+                          { value: 'POSSIBLY_LOOSE', label: 'Có thể lỏng' },
+                          { value: 'LOOSE', label: 'Lỏng lẻo' },
+                          { value: 'UNKNOWN', label: 'Chưa rõ' },
                         ]}
                       />
                     </Form.Item>
 
                     <Form.Item
-                      name="daysSinceIndexArthroplasty"
                       label={<span className="text-sm font-medium text-slate-700">Số ngày từ lần thay khớp đầu</span>}
-                      rules={[{ type: 'number', message: 'Vui lòng nhập số hợp lệ' }]}
                     >
                       <InputNumber
                         placeholder="Ví dụ: 70"
@@ -398,7 +375,6 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({
                     </Form.Item>
 
                     <Form.Item
-                      name="prosthesisJoint"
                       label={<span className="text-sm font-medium text-slate-700">Khớp nhân tạo</span>}
                       className="col-span-3"
                     >
@@ -411,7 +387,6 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({
                     </Form.Item>
 
                     <Form.Item
-                      name="notations"
                       label={<span className="text-sm font-medium text-slate-700">Khám bệnh toàn thân</span>}
                       className="col-span-3"
                     >
@@ -430,22 +405,33 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({
               <section className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <div className="bg-slate-50 px-6 py-4 border-b border-slate-200">
                   <h3 className="text-slate-900 font-bold text-lg flex items-center gap-2">
-                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold">
-                      2
-                    </span>
                     Xét nghiệm chẩn đoán PJI
                   </h3>
                 </div>
 
                 {/* 2.1 Hematology Tests */}
                 <div className="border-b border-slate-200">
-                  <div className="bg-gradient-to-r from-blue-50 to-slate-50 px-6 py-3 border-b border-blue-100">
+                  <div className="bg-gradient-to-r from-blue-50 to-slate-50 px-6 py-3 border-b border-blue-100 flex items-center justify-between">
                     <h4 className="text-blue-900 font-bold text-base flex items-center gap-2">
                       <span className="flex items-center justify-center w-5 h-5 rounded bg-blue-500/10 text-blue-600 text-xs font-bold">
                         1
                       </span>
                       Xét nghiệm huyết học
                     </h4>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newId = `ht_custom_${Date.now()}`;
+                        setForm((prev) => ({
+                          ...prev,
+                          hematologyTests: [...prev.hematologyTests, { id: newId, name: '', result: '', normalRange: '', unit: '' }],
+                        }));
+                      }}
+                      className="text-blue-600 hover:text-blue-800 text-xs font-semibold flex items-center gap-1 px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[16px] text-green-600">add_circle</span>
+                      Thêm xét nghiệm
+                    </button>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left text-slate-700">
@@ -455,40 +441,106 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({
                           <th className="px-4 py-3 border-r border-slate-200 w-32">Kết quả</th>
                           <th className="px-4 py-3 border-r border-slate-200 w-16 text-center">Ghi chú</th>
                           <th className="px-4 py-3 border-r border-slate-200 w-32">Chỉ số BT</th>
-                          <th className="px-4 py-3">Đơn vị</th>
+                          <th className="px-4 py-3 border-r border-slate-200">Đơn vị</th>
+                          <th className="px-4 py-3 w-16">Sửa</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
-                        {clinicForm.hematologyTests?.map((test, index) => (
-                          <tr key={test.id} className="hover:bg-slate-50/50">
-                            <td className="px-4 py-2 font-medium text-slate-900 border-r border-slate-200">{test.name}</td>
-                            <td className="px-4 py-2 border-r border-slate-200 p-0">
-                              <Input
-                                type="text"
-                                value={test.result}
-                                onChange={(e) => {
-                                  const newTests = clinicForm.hematologyTests.map((t, i) =>
-                                    i === index ? { ...t, result: e.target.value } : t
-                                  );
-                                  setForm((prev) => ({ ...prev, hematologyTests: newTests }));
-                                }}
-                                className="w-full h-full px-4 py-2 border-none bg-transparent"
-                              />
-                            </td>
-                            <td className="px-4 py-2 border-r border-slate-200 text-center font-bold">
-                              {(() => {
-                                const status = getTestStatus(test.result, test.normalRange);
-                                return status ? (
-                                  <span className={status === 'H' ? 'text-red-600 font-bold' : 'text-yellow-600 font-bold'}>
-                                    {status}
-                                  </span>
-                                ) : null;
-                              })()}
-                            </td>
-                            <td className="px-4 py-2 border-r border-slate-200 text-slate-700">{test.normalRange}</td>
-                            <td className="px-4 py-2 text-slate-500 bg-slate-50/30">{test.unit}</td>
-                          </tr>
-                        ))}
+                        {clinicForm.hematologyTests?.map((test, index) => {
+                          const isCustom = test.id.startsWith('ht_custom_');
+                          return (
+                            <tr key={test.id} className="hover:bg-slate-50/50">
+                              <td className="px-4 py-2 font-medium text-slate-900 border-r border-slate-200">
+                                {isCustom ? (
+                                  <Input
+                                    type="text"
+                                    value={test.name}
+                                    placeholder="Tên xét nghiệm"
+                                    onChange={(e) => {
+                                      const newTests = clinicForm.hematologyTests.map((t, i) =>
+                                        i === index ? { ...t, name: e.target.value } : t
+                                      );
+                                      setForm((prev) => ({ ...prev, hematologyTests: newTests }));
+                                    }}
+                                    className="w-full border-none bg-transparent px-0"
+                                  />
+                                ) : test.name}
+                              </td>
+                              <td className="px-4 py-2 border-r border-slate-200 p-0">
+                                <Input
+                                  type="text"
+                                  value={test.result}
+                                  onChange={(e) => {
+                                    const newTests = clinicForm.hematologyTests.map((t, i) =>
+                                      i === index ? { ...t, result: e.target.value } : t
+                                    );
+                                    setForm((prev) => ({ ...prev, hematologyTests: newTests }));
+                                  }}
+                                  className="w-full h-full px-4 py-2 border-none bg-transparent"
+                                />
+                              </td>
+                              <td className="px-4 py-2 border-r border-slate-200 text-center font-bold">
+                                {(() => {
+                                  const status = getTestStatus(test.result, test.normalRange);
+                                  return status ? (
+                                    <span className={status === 'H' ? 'text-red-600 font-bold' : 'text-yellow-600 font-bold'}>
+                                      {status}
+                                    </span>
+                                  ) : null;
+                                })()}
+                              </td>
+                              <td className="px-4 py-2 border-r border-slate-200 text-slate-700">
+                                {isCustom ? (
+                                  <Input
+                                    type="text"
+                                    value={test.normalRange}
+                                    placeholder="VD: 40 - 74"
+                                    onChange={(e) => {
+                                      const newTests = clinicForm.hematologyTests.map((t, i) =>
+                                        i === index ? { ...t, normalRange: e.target.value } : t
+                                      );
+                                      setForm((prev) => ({ ...prev, hematologyTests: newTests }));
+                                    }}
+                                    className="w-full border-none bg-transparent px-0"
+                                  />
+                                ) : test.normalRange}
+                              </td>
+                              <td className="px-4 py-2 text-slate-500 bg-slate-50/30 border-r border-slate-200">
+                                {isCustom ? (
+                                  <Input
+                                    type="text"
+                                    value={test.unit}
+                                    placeholder="VD: mg/L"
+                                    onChange={(e) => {
+                                      const newTests = clinicForm.hematologyTests.map((t, i) =>
+                                        i === index ? { ...t, unit: e.target.value } : t
+                                      );
+                                      setForm((prev) => ({ ...prev, hematologyTests: newTests }));
+                                    }}
+                                    className="w-full border-none bg-transparent px-0"
+                                  />
+                                ) : test.unit}
+                              </td>
+                              <td className="px-4 py-2 text-center">
+                                {isCustom && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setForm((prev) => ({
+                                        ...prev,
+                                        hematologyTests: prev.hematologyTests.filter((_, i) => i !== index),
+                                      }));
+                                    }}
+                                    className="text-red-400 hover:text-red-600 transition-colors"
+                                    title="Xóa xét nghiệm"
+                                  >
+                                    <span className="material-symbols-outlined text-[18px]">close</span>
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -501,7 +553,7 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({
                       <span className="flex items-center justify-center w-5 h-5 rounded bg-green-500/10 text-green-600 text-xs font-bold">
                         2
                       </span>
-                      Xet nghiem sinh hoa
+                      Xét nghiệm sinh hóa
                     </h4>
                   </div>
                   <div className="overflow-x-auto">
@@ -596,13 +648,27 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({
 
                 {/* 2.3 Xet nghiem vi sinh */}
                 <div>
-                  <div className="bg-gradient-to-r from-amber-50 to-slate-50 px-6 py-3 border-b border-amber-100">
+                  <div className="bg-gradient-to-r from-amber-50 to-slate-50 px-6 py-3 border-b border-amber-100 flex items-center justify-between">
                     <h4 className="text-amber-900 font-bold text-base flex items-center gap-2">
                       <span className="flex items-center justify-center w-5 h-5 rounded bg-amber-500/10 text-amber-600 text-xs font-bold">
                         3
                       </span>
                       Xét nghiệm vi sinh
                     </h4>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newId = `fa_custom_${Date.now()}`;
+                        setForm((prev) => ({
+                          ...prev,
+                          fluidAnalysis: [...prev.fluidAnalysis, { id: newId, name: '', result: '', normalRange: '', unit: '' }],
+                        }));
+                      }}
+                      className="text-amber-600 hover:text-amber-800 text-xs font-semibold flex items-center gap-1 px-2 py-1 rounded hover:bg-amber-50 transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">add_circle</span>
+                      Thêm xét nghiệm
+                    </button>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left text-slate-700">
@@ -611,16 +677,31 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({
                           <th className="px-4 py-3 border-r border-slate-200">Tên xét nghiệm</th>
                           <th className="px-4 py-3 border-r border-slate-200">Kết quả</th>
                           <th className="px-4 py-3 border-r border-slate-200 w-32">Chỉ số BT</th>
-                          <th className="px-4 py-3">Đơn vị</th>
+                          <th className="px-4 py-3 border-r border-slate-200">Đơn vị</th>
+                          <th className="px-4 py-3 w-12"></th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
                         {clinicForm.fluidAnalysis?.map((test, index) => {
                           if (test.name === 'Nhuộm Gram') return null;
+                          const isCustom = test.id.startsWith('fa_custom_');
                           return (
                             <tr key={test.id} className="hover:bg-slate-50/50">
                               <td className="px-4 py-2 font-medium text-slate-900 border-r border-slate-200">
-                                {test.name}
+                                {isCustom ? (
+                                  <Input
+                                    type="text"
+                                    value={test.name}
+                                    placeholder="Tên xét nghiệm"
+                                    onChange={(e) => {
+                                      const newTests = clinicForm.fluidAnalysis.map((t, i) =>
+                                        i === index ? { ...t, name: e.target.value } : t
+                                      );
+                                      setForm((prev) => ({ ...prev, fluidAnalysis: newTests }));
+                                    }}
+                                    className="w-full border-none bg-transparent px-0"
+                                  />
+                                ) : test.name}
                               </td>
                               <td className="px-4 py-2 border-r border-slate-200 p-0">
                                 {test.name === 'Cấy khuẩn' ? (
@@ -632,7 +713,7 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({
                                       >
                                         <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                                           <span className="font-bold text-slate-800 text-sm">
-                                            Mau {sample.sampleNumber}
+                                            Mẫu {sample.sampleNumber}
                                           </span>
                                           <button
                                             type="button"
@@ -649,13 +730,13 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({
                                             className="text-red-500 hover:text-red-700 text-xs font-semibold flex items-center gap-1"
                                           >
                                             <span className="material-symbols-outlined text-[16px]">delete</span>
-                                            Xoa
+                                            Xóa
                                           </button>
                                         </div>
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                           <div className="flex flex-col gap-1.5">
-                                            <label className="text-xs font-semibold text-slate-700">Ket qua</label>
+                                            <label className="text-xs font-semibold text-slate-700">Kết quả</label>
                                             <Select
                                               value={sample.result || undefined}
                                               onChange={(val) => {
@@ -666,16 +747,16 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({
                                               placeholder="-- Chon ket qua --"
                                               className="w-full"
                                               options={[
-                                                { value: 'POSITIVE', label: 'Duong tinh (POSITIVE)' },
-                                                { value: 'NEGATIVE', label: 'Am tinh (NEGATIVE)' },
-                                                { value: 'CONTAMINATED', label: 'Nhiem ban (CONTAMINATED)' },
-                                                { value: 'PENDING', label: 'Dang cho (PENDING)' },
+                                                { value: 'POSITIVE', label: 'Dương tính' },
+                                                { value: 'NEGATIVE', label: 'Âm tính' },
+                                                { value: 'CONTAMINATED', label: 'Nhiễm bẩn' },
+                                                { value: 'PENDING', label: 'Đang chờ kết quả' },
                                               ]}
                                             />
                                           </div>
 
                                           <div className="flex flex-col gap-1.5">
-                                            <label className="text-xs font-semibold text-slate-700">Ten vi khuan</label>
+                                            <label className="text-xs font-semibold text-slate-700">Tên vi khuẩn</label>
                                             <Input
                                               value={sample.name || ''}
                                               onChange={(e) => {
@@ -686,12 +767,12 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({
                                                 };
                                                 setForm((prev) => ({ ...prev, cultureResults: newSamples }));
                                               }}
-                                              placeholder="Nhap ten vi khuan..."
+                                              placeholder="Nhập tên..."
                                             />
                                           </div>
 
                                           <div className="flex flex-col gap-1.5">
-                                            <label className="text-xs font-semibold text-slate-700">Nhuom Gram</label>
+                                            <label className="text-xs font-semibold text-slate-700">Nhuộm Gram</label>
                                             <Select
                                               value={sample.gramType || undefined}
                                               onChange={(val) => {
@@ -699,12 +780,12 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({
                                                 newSamples[sampleIdx] = { ...newSamples[sampleIdx], gramType: val };
                                                 setForm((prev) => ({ ...prev, cultureResults: newSamples }));
                                               }}
-                                              placeholder="-- Chon loai --"
+                                              placeholder="-- Chọn loại --"
                                               className="w-full"
                                               options={[
-                                                { value: 'Gram Duong', label: 'Gram Duong' },
-                                                { value: 'Gram Am', label: 'Gram Am' },
-                                                { value: 'Chua ro', label: 'Chua ro' },
+                                                { value: 'Gram Dương', label: 'Gram Dương' },
+                                                { value: 'Gram Âm', label: 'Gram Âm' },
+                                                { value: 'Chưa rõ', label: 'Chưa rõ' },
                                               ]}
                                             />
                                           </div>
@@ -723,7 +804,7 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({
                                                 };
                                                 setForm((prev) => ({ ...prev, cultureResults: newSamples }));
                                               }}
-                                              placeholder="Vi du: 3"
+                                              placeholder="VD: 3"
                                               className="w-full"
                                               min={0}
                                               controls={false}
@@ -764,7 +845,7 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({
                                                   };
                                                   setForm((prev) => ({ ...prev, cultureResults: newSamples }));
                                                 }}
-                                                placeholder="Vi du: 7"
+                                                placeholder="VD: 7"
                                                 className="w-full"
                                                 min={0}
                                                 controls={false}
@@ -786,7 +867,7 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({
                                                 };
                                                 setForm((prev) => ({ ...prev, cultureResults: newSamples }));
                                               }}
-                                              placeholder="Ghi chu them..."
+                                              placeholder="note..."
                                             />
                                           </div>
                                         </div>
@@ -832,8 +913,55 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({
                                   />
                                 )}
                               </td>
-                              <td className="px-4 py-2 border-r border-slate-200 text-slate-700">{test.normalRange}</td>
-                              <td className="px-4 py-2 text-slate-500 bg-slate-50/30">{test.unit}</td>
+                              <td className="px-4 py-2 border-r border-slate-200 text-slate-700">
+                                {isCustom ? (
+                                  <Input
+                                    type="text"
+                                    value={test.normalRange}
+                                    placeholder="VD: 40 - 74"
+                                    onChange={(e) => {
+                                      const newTests = clinicForm.fluidAnalysis.map((t, i) =>
+                                        i === index ? { ...t, normalRange: e.target.value } : t
+                                      );
+                                      setForm((prev) => ({ ...prev, fluidAnalysis: newTests }));
+                                    }}
+                                    className="w-full border-none bg-transparent px-0"
+                                  />
+                                ) : test.normalRange}
+                              </td>
+                              <td className="px-4 py-2 text-slate-500 bg-slate-50/30 border-r border-slate-200">
+                                {isCustom ? (
+                                  <Input
+                                    type="text"
+                                    value={test.unit}
+                                    placeholder="VD: mg/L"
+                                    onChange={(e) => {
+                                      const newTests = clinicForm.fluidAnalysis.map((t, i) =>
+                                        i === index ? { ...t, unit: e.target.value } : t
+                                      );
+                                      setForm((prev) => ({ ...prev, fluidAnalysis: newTests }));
+                                    }}
+                                    className="w-full border-none bg-transparent px-0"
+                                  />
+                                ) : test.unit}
+                              </td>
+                              <td className="px-4 py-2 text-center">
+                                {isCustom && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setForm((prev) => ({
+                                        ...prev,
+                                        fluidAnalysis: prev.fluidAnalysis.filter((_, i) => i !== index),
+                                      }));
+                                    }}
+                                    className="text-red-400 hover:text-red-600 transition-colors"
+                                    title="Xóa xét nghiệm"
+                                  >
+                                    <span className="material-symbols-outlined text-[18px]">close</span>
+                                  </button>
+                                )}
+                              </td>
                             </tr>
                           );
                         })}
@@ -873,7 +1001,7 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({
 
                   {/* Image Upload */}
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-semibold text-slate-700">Hinh anh dinh kem</label>
+                    <label className="text-sm font-semibold text-slate-700">Ảnh đính kèm</label>
                     <div className="grid grid-cols-4 gap-4">
                       {clinicForm.formImages?.map((image, index) => (
                         <div key={image.id} className="relative group">
@@ -906,7 +1034,7 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({
                           {uploading ? 'hourglass_top' : 'add_photo_alternate'}
                         </span>
                         <span className="text-xs text-slate-500 font-medium">
-                          {uploading ? 'Dang tai...' : 'Them anh moi'}
+                          {uploading ? 'Đang tải...' : 'Thêm ảnh'}
                         </span>
                         <input
                           type="file"
@@ -918,7 +1046,7 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({
                               const file = e.target.files[0];
 
                               if (file.size > 3 * 1024 * 1024) {
-                                alert('Anh khong duoc vuot qua 3MB');
+                                message.error('Ảnh không vượt quá 3MB');
                                 e.target.value = '';
                                 return;
                               }
@@ -931,42 +1059,14 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({
                                 'application/dicom',
                               ];
                               if (!validImageTypes.includes(file.type) && !file.name.toLowerCase().endsWith('.dcm')) {
-                                alert('Vui long chon dung dinh dang anh y te (JPG, PNG, WEBP, DICOM)');
+                                message.error('Chưa đúng định dạng hỗ trợ (JPG, PNG, WEBP, DICOM)');
                                 e.target.value = '';
                                 return;
                               }
 
-                              const type = prompt('Chon loai hinh anh (X-ray, CT, Ultrasound):', 'X-ray');
-                              if (type) {
-                                const validTypes = ['X-ray', 'CT', 'Ultrasound'];
-                                const selectedType = validTypes.includes(type) ? type : 'X-ray';
-
-                                const previewUrl = URL.createObjectURL(file);
-
-                                setUploading(true);
-                                try {
-                                  const res = await callUploadImage(file, 'clinical-images');
-                                  const uploadedFileName =
-                                    (res as any)?.fileName || (res as any)?.data?.fileName;
-                                  if (uploadedFileName) {
-                                    const newImage = {
-                                      id: Math.random().toString(36).substring(2, 11),
-                                      url: uploadedFileName,
-                                      previewUrl: previewUrl,
-                                      type: selectedType,
-                                      name: file.name,
-                                    };
-                                    setForm((prev) => ({
-                                      ...prev,
-                                      formImages: [...prev.formImages, newImage],
-                                    }));
-                                  }
-                                } catch {
-                                  alert('Khong the tai anh len. Vui long thu lai.');
-                                } finally {
-                                  setUploading(false);
-                                }
-                              }
+                              setPendingImageFile(file);
+                              setSelectedImageType('X-ray');
+                              setImageTypeModalOpen(true);
                               e.target.value = '';
                             }
                           }}
@@ -980,6 +1080,58 @@ export const ClinicalAssessmentPage: React.FC<ClinicalAssessmentProps> = ({
           </div>
         </div>
       </div>
+      <Modal
+        title="Chọn loại ảnh"
+        open={imageTypeModalOpen}
+        onOk={async () => {
+          if (!pendingImageFile) return;
+          const previewUrl = URL.createObjectURL(pendingImageFile);
+          setUploading(true);
+          setImageTypeModalOpen(false);
+          try {
+            const res = await callUploadImage(pendingImageFile, 'clinical-images');
+            const uploadedFileName =
+              (res as any)?.fileName || (res as any)?.data?.fileName;
+            if (uploadedFileName) {
+              const newImage = {
+                id: Math.random().toString(36).substring(2, 11),
+                url: uploadedFileName,
+                previewUrl: previewUrl,
+                type: selectedImageType,
+                name: pendingImageFile.name,
+              };
+              setForm((prev) => ({
+                ...prev,
+                formImages: [...prev.formImages, newImage],
+              }));
+            }
+          } catch {
+            message.error('Xảy ra lỗi! Hãy thử lại');
+          } finally {
+            setUploading(false);
+            setPendingImageFile(null);
+          }
+        }}
+        onCancel={() => {
+          setImageTypeModalOpen(false);
+          setPendingImageFile(null);
+        }}
+        okText="Xác nhận"
+        cancelText="Hủy"
+        destroyOnHidden
+      >
+        <Select
+          value={selectedImageType}
+          onChange={setSelectedImageType}
+          style={{ width: '100%' }}
+          options={[
+            { value: 'X-ray', label: 'X-Quang' },
+            { value: 'CT', label: 'Chụp cắt lớp vi tính (CT-scan)' },
+            { value: 'Ultrasound', label: 'Siêu âm' },
+            { value: 'MRI', label: 'Chụp cộng hưởng từ (MRI)' },
+          ]}
+        />
+      </Modal>
     </>
   );
 };

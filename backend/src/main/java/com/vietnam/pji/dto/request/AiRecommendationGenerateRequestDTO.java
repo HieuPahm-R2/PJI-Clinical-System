@@ -1,5 +1,6 @@
 package com.vietnam.pji.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,10 +18,19 @@ import java.util.Map;
 @AllArgsConstructor
 public class AiRecommendationGenerateRequestDTO implements Serializable {
 
+    @JsonProperty("request_id")
     private String requestId;
+
+    @JsonProperty("trigger_type")
     private String triggerType;
+
+    @JsonProperty("episode_id")
     private Long episodeId;
+
+    @JsonProperty("snapshot_id")
     private Long snapshotId;
+
+    @JsonProperty("snapshot_data_json")
     private Map<String, Object> snapshotDataJson;
     private Options options;
 
@@ -31,8 +41,12 @@ public class AiRecommendationGenerateRequestDTO implements Serializable {
     public static class Options implements Serializable {
         @Builder.Default
         private String language = "vi";
+
+        @JsonProperty("include_citations")
         @Builder.Default
         private boolean includeCitations = true;
+
+        @JsonProperty("top_k")
         @Builder.Default
         private int topK = 5;
     }

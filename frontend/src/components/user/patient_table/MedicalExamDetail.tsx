@@ -57,6 +57,7 @@ interface MedicalExamDetailProps {
 
 const MedicalExamDetail: React.FC<MedicalExamDetailProps> = ({ open, onClose, examData, patientId }) => {
     const [loading, setLoading] = useState(false);
+    const latestFetchRequestRef = useRef(0);
 
     // Fetched data for tabs
     const [labResults, setLabResults] = useState<ILabResult[]>([]);
@@ -87,6 +88,7 @@ const MedicalExamDetail: React.FC<MedicalExamDetailProps> = ({ open, onClose, ex
         if (!open) return;
 
         if (examData?.id) {
+            resetData();
             fetchAllData(examData.id);
         } else {
             // New episode — reset all
@@ -106,6 +108,7 @@ const MedicalExamDetail: React.FC<MedicalExamDetailProps> = ({ open, onClose, ex
     };
 
     const fetchAllData = async (episodeId: string) => {
+        const requestId = ++latestFetchRequestRef.current;
         setLoading(true);
         try {
             const [labRes, clinicalRes, cultureRes, mhRes, surgeryRes, imageRes] = await Promise.all([
@@ -116,6 +119,10 @@ const MedicalExamDetail: React.FC<MedicalExamDetailProps> = ({ open, onClose, ex
                 callFetchSurgeriesByEpisode(episodeId, 'page=0&size=50&sort=surgeryDate,asc'),
                 callFetchImageResultsByEpisode(episodeId, 'page=0&size=50')
             ]);
+
+            if (requestId !== latestFetchRequestRef.current) {
+                return;
+            }
 
             const labs = labRes?.data?.result ?? [];
             setLabResults(labs);
@@ -137,6 +144,10 @@ const MedicalExamDetail: React.FC<MedicalExamDetailProps> = ({ open, onClose, ex
                     } catch { /* ignore */ }
                 })
             );
+
+            if (requestId !== latestFetchRequestRef.current) {
+                return;
+            }
             setSensitivityMap(sensMap);
 
             const images = imageRes?.data?.result ?? [];
@@ -145,9 +156,14 @@ const MedicalExamDetail: React.FC<MedicalExamDetailProps> = ({ open, onClose, ex
             setMedicalHistory(mhRes?.data ?? null);
             setSurgeries(surgeryRes?.data?.result ?? []);
         } catch {
+            if (requestId !== latestFetchRequestRef.current) {
+                return;
+            }
             message.error('Không thể tải dữ liệu bệnh án');
         } finally {
-            setLoading(false);
+            if (requestId === latestFetchRequestRef.current) {
+                setLoading(false);
+            }
         }
     };
 
@@ -234,15 +250,11 @@ const MedicalExamDetail: React.FC<MedicalExamDetailProps> = ({ open, onClose, ex
             const deletePromises = toDelete.map(s => callDeleteSurgery(String(s.id!)));
             await Promise.all([...deletePromises, ...updatePromises, ...createPromises]);
 
-            // 4. Save Lab Results — TestItem → ILabResult conversion stays (save boundary)
-            const getLab = (name: string) => {
-                const test = form.hematologyTests?.find(t => t.name.toLowerCase() === name.toLowerCase());
-                return test && test.result ? { value: Number(test.result), unit: test.unit } : undefined;
-            };
-            const getFluid = (name: string) => {
-                const test = form.fluidAnalysis?.find(t => t.name.toLowerCase() === name.toLowerCase());
-                return test && test.result ? { value: Number(test.result), unit: test.unit } : undefined;
-            };
+            // 4. Save Lab Results — convert TestItem[] to ILabTestItem[] for JSONB storage
+            const toLabTestItems = (tests: typeof form.hematologyTests) =>
+                tests
+                    .filter(t => t.result)
+                    .map(t => ({ id: t.id, name: t.name, value: t.result, unit: t.unit, normalRange: t.normalRange }));
 
             const reverseBioMapping: Record<string, string> = {
                 'bc_4': 'glucose',
@@ -260,21 +272,8 @@ const MedicalExamDetail: React.FC<MedicalExamDetailProps> = ({ open, onClose, ex
 
             const labPayload: Partial<ILabResult> = {
                 episodeId: Number(episodeId),
-                esr: getLab('Máu lắng'),
-                wbcBlood: getLab('wbc'),
-                neut: getLab('%NEUT'),
-                mono: getLab('%MONO'),
-                rbc: getLab('RBC'),
-                mcv: getLab('MCV'),
-                mch: getLab('MCH'),
-                rdw: getLab('RDW-CV'),
-                ig: getLab('IG%'),
-                dimer: getLab('D-dimer'),
-                alphaDefensin: getLab('Alpha Defensin'),
-                serumIl6: getLab('Serum IL-6'),
-                crp: getFluid('Định lượng CRP (Dịch)'),
-                synovialWbc: getFluid('Bạch cầu (Dịch)'),
-                synovialPmn: getFluid('%PMN (Dịch)'),
+                hematologyTests: toLabTestItems(form.hematologyTests),
+                fluidAnalysis: toLabTestItems(form.fluidAnalysis),
                 biochemicalData: form.biochemistryTests?.reduce((acc, test) => {
                     if (test.result) {
                         const backendKey = reverseBioMapping[test.id] || test.id;
@@ -461,6 +460,7 @@ const MedicalExamDetail: React.FC<MedicalExamDetailProps> = ({ open, onClose, ex
         {
             key: '1',
             label: 'Quản lý bệnh án',
+            forceRender: true,
             children: (
                 <MedicalExamination
                     mode="standalone"
@@ -472,6 +472,7 @@ const MedicalExamDetail: React.FC<MedicalExamDetailProps> = ({ open, onClose, ex
         {
             key: '2',
             label: 'Tiền sử bệnh',
+            forceRender: true,
             children: (
                 <MedicalHistoryPage
                     mode="standalone"
@@ -483,6 +484,7 @@ const MedicalExamDetail: React.FC<MedicalExamDetailProps> = ({ open, onClose, ex
         {
             key: '3',
             label: 'Lâm sàng & CLS',
+            forceRender: true,
             children: (
                 <ClinicalAssessmentPage
                     mode="standalone"
@@ -497,6 +499,7 @@ const MedicalExamDetail: React.FC<MedicalExamDetailProps> = ({ open, onClose, ex
         {
             key: '4',
             label: 'Kháng sinh đồ',
+            forceRender: true,
             children: (
                 <Antibiogram
                     mode="standalone"

@@ -8,11 +8,14 @@ import com.vietnam.pji.model.medical.PjiEpisode;
 import com.vietnam.pji.repository.EpisodeRepository;
 import com.vietnam.pji.repository.LabResultRepository;
 import com.vietnam.pji.services.LabResultService;
+import com.vietnam.pji.services.PendingLabTaskService;
+import com.vietnam.pji.services.RedisService;
 import com.vietnam.pji.utils.mapper.LabResultMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +24,8 @@ public class LabResultServiceImpl implements LabResultService {
     private final LabResultRepository labResultRepository;
     private final EpisodeRepository episodeRepository;
     private final LabResultMapper labResultMapper;
+    private final PendingLabTaskService pendingLabTaskService;
+    private final RedisService redisService;
 
     @Override
     public LabResult create(LabResultRequestDTO data) {
@@ -28,7 +33,14 @@ public class LabResultServiceImpl implements LabResultService {
                 .orElseThrow(() -> new ResourceNotFoundException("Episode not found"));
         LabResult labResult = labResultMapper.toEntity(data);
         labResult.setEpisode(episode);
-        return labResultRepository.save(labResult);
+        LabResult saved = labResultRepository.save(labResult);
+
+        pendingLabTaskService.autoFulfillForEpisode(
+                episode.getId(), saved.getId(),
+                data.getHematologyTests(), data.getFluidAnalysis(), data.getBiochemicalData());
+
+        redisService.evictSnapshotCache(data.getEpisodeId());
+        return saved;
     }
 
     @Override
@@ -36,7 +48,15 @@ public class LabResultServiceImpl implements LabResultService {
         LabResult labResult = labResultRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Lab result not found"));
         labResultMapper.update(data, labResult);
-        return labResultRepository.save(labResult);
+        LabResult saved = labResultRepository.save(labResult);
+
+        Long episodeId = labResult.getEpisode().getId();
+        pendingLabTaskService.autoFulfillForEpisode(
+                episodeId, saved.getId(),
+                data.getHematologyTests(), data.getFluidAnalysis(), data.getBiochemicalData());
+
+        redisService.evictSnapshotCache(episodeId);
+        return saved;
     }
 
     @Override
@@ -46,11 +66,13 @@ public class LabResultServiceImpl implements LabResultService {
     }
 
     @Override
+    @Transactional
     public void delete(Long id) {
-        if (!labResultRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Lab result not found");
-        }
+        LabResult labResult = labResultRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Lab result not found"));
+        Long episodeId = labResult.getEpisode().getId();
         labResultRepository.deleteById(id);
+        redisService.evictSnapshotCache(episodeId);
     }
 
     @Override

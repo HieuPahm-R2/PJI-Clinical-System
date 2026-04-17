@@ -24,7 +24,7 @@ public class AiServiceClient {
         log.info("Calling AI service for recommendation generation, requestId={}", request.getRequestId());
 
         return aiRestTemplate.postForObject(
-                "/api/v1/recommendation/generate",
+                "/api/v1/process-snapshot",
                 request,
                 AiRecommendationGenerateResponseDTO.class);
     }

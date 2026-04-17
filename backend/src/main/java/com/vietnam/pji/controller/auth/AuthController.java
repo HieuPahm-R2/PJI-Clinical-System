@@ -31,6 +31,12 @@ public class AuthController {
     @Value("${secure.jwt.refresh-token-validity-in-seconds}")
     private long refreshTokenExpire;
 
+    @Value("${secure.cookie.secure:false}")
+    private boolean secureCookie;
+
+    @Value("${secure.cookie.same-site:Lax}")
+    private String sameSite;
+
     private final UserService userService;
     private final RedisService RedisService;
     private final AuthenticationManager authenticationManager;
@@ -62,6 +68,8 @@ public class AuthController {
         ResponseCookie resCookies = ResponseCookie
                 .from("refresh-token", refresh_token)
                 .httpOnly(true)
+                .secure(secureCookie)
+                .sameSite(sameSite)
                 .path("/")
                 .maxAge(refreshTokenExpire)
                 .build();
@@ -129,6 +137,8 @@ public class AuthController {
         ResponseCookie resCookies = ResponseCookie
                 .from("refresh-token", refresh_token)
                 .httpOnly(true)
+                .secure(secureCookie)
+                .sameSite(sameSite)
                 .path("/")
                 .maxAge(refreshTokenExpire)
                 .build();
@@ -151,6 +161,8 @@ public class AuthController {
         ResponseCookie removeCookies = ResponseCookie
                 .from("refresh-token", null)
                 .httpOnly(true)
+                .secure(secureCookie)
+                .sameSite(sameSite)
                 .path("/")
                 .maxAge(0)
                 .build();

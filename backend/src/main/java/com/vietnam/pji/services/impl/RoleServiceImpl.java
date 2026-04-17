@@ -9,6 +9,7 @@ import com.vietnam.pji.model.auth.Permission;
 import com.vietnam.pji.model.auth.Role;
 import com.vietnam.pji.repository.PermissionRepository;
 import com.vietnam.pji.repository.RoleRepository;
+import com.vietnam.pji.services.RedisService;
 import com.vietnam.pji.services.RoleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 public class RoleServiceImpl implements RoleService {
     private final RoleRepository roleRepository;
     private final PermissionRepository permissionRepository;
+    private final RedisService redisService;
 
 
     @Override
@@ -32,7 +34,9 @@ public class RoleServiceImpl implements RoleService {
         }
         List<Permission> allPers = this.permissionRepository.findByIdIn(pers);
         data.setPermissions(allPers);
-        return this.roleRepository.save(data);
+        Role saved = this.roleRepository.save(data);
+        redisService.evictAllUserPermissions();
+        return saved;
     }
 
     @Override
@@ -48,7 +52,9 @@ public class RoleServiceImpl implements RoleService {
                 data.setPermissions(allPermissions);
                 data.setCreatedBy(rOptional.get().getCreatedBy());
                 data.setCreatedAt(rOptional.get().getCreatedAt());
-                return this.roleRepository.save(data);
+                Role saved = this.roleRepository.save(data);
+                redisService.evictAllUserPermissions();
+                return saved;
             }
             return null;
         }
@@ -69,6 +75,7 @@ public class RoleServiceImpl implements RoleService {
             throw new NoSuchElementException("Không tìm thấy dữ liệu! (Có thể do ID không hợp lệ)");
         }
         this.roleRepository.deleteById(id);
+        redisService.evictAllUserPermissions();
     }
 
     @Override

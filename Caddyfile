@@ -59,14 +59,6 @@
 
 	handle /api/* {
 		# Rate limiting - 100 requests/phút per IP
-		rate_limit {
-			zone api_zone {
-				key    {remote_host}
-				events 100
-				window 1m
-			}
-		}
-
 		# Reverse proxy đến backend
 		reverse_proxy pji-backend:8085 {
 			# Health check - Caddy tự động skip backend nếu unhealthy
@@ -86,7 +78,6 @@
 			header_up X-Real-IP          {remote_host}
 			header_up X-Forwarded-For    {remote_host}
 			header_up X-Forwarded-Proto  {scheme}
-			header_up X-Request-ID       {http.request.uuid}
 		}
 	}
 

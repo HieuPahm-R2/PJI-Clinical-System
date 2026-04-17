@@ -7,12 +7,14 @@ import com.vietnam.pji.model.medical.PjiEpisode;
 import com.vietnam.pji.model.medical.Surgery;
 import com.vietnam.pji.repository.EpisodeRepository;
 import com.vietnam.pji.repository.SurgeryRepository;
+import com.vietnam.pji.services.RedisService;
 import com.vietnam.pji.services.SurgeryService;
 import com.vietnam.pji.utils.mapper.SurgeryMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +23,7 @@ public class SurgeryServiceImpl implements SurgeryService {
     private final SurgeryRepository surgeryRepository;
     private final EpisodeRepository episodeRepository;
     private final SurgeryMapper surgeryMapper;
+    private final RedisService redisService;
 
     @Override
     public Surgery create(SurgeryRequestDTO data) {
@@ -28,7 +31,9 @@ public class SurgeryServiceImpl implements SurgeryService {
                 .orElseThrow(() -> new ResourceNotFoundException("Episode not found"));
         Surgery surgery = surgeryMapper.toEntity(data);
         surgery.setEpisode(episode);
-        return surgeryRepository.save(surgery);
+        Surgery saved = surgeryRepository.save(surgery);
+        redisService.evictSnapshotCache(data.getEpisodeId());
+        return saved;
     }
 
     @Override
@@ -36,7 +41,9 @@ public class SurgeryServiceImpl implements SurgeryService {
         Surgery surgery = surgeryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Surgery not found"));
         surgeryMapper.update(data, surgery);
-        return surgeryRepository.save(surgery);
+        Surgery saved = surgeryRepository.save(surgery);
+        redisService.evictSnapshotCache(surgery.getEpisode().getId());
+        return saved;
     }
 
     @Override
@@ -46,11 +53,13 @@ public class SurgeryServiceImpl implements SurgeryService {
     }
 
     @Override
+    @Transactional
     public void delete(Long id) {
-        if (!surgeryRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Surgery not found");
-        }
+        Surgery surgery = surgeryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Surgery not found"));
+        Long episodeId = surgery.getEpisode().getId();
         surgeryRepository.deleteById(id);
+        redisService.evictSnapshotCache(episodeId);
     }
 
     @Override
